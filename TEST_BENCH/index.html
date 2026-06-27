@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Laboratorio de Gráficos — Test Bench 3D</title>
+
+<!-- Estilos -->
+<link rel="stylesheet" href="style.css">
+
+<!-- Importmap Three.js -->
+<script type="importmap">
+{
+    "imports": {
+        "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+        "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+    }
+}
+</script>
+</head>
+<body>
+
+<!-- HUD -->
+<div id="hud">
+  <h1>🔬 TEST BENCH 3D</h1>
+  <div class="row">Objeto: <span class="status" id="hud-obj">Esfera</span></div>
+  <div class="row">Material: <span class="status" id="hud-mat">Phong</span></div>
+  <div class="row">Textura: <span class="status" id="hud-tex">Ninguna</span></div>
+  <div class="row">Proyección: <span class="status" id="hud-proj">Perspectiva</span></div>
+</div>
+
+<!-- Panel de control -->
+<div id="panel">
+  <h2>⚙ CONTROLES</h2>
+
+  <h3>Seleccionar objeto</h3>
+  <div id="obj-buttons"></div>
+
+  <h3>Material</h3>
+  <button class="matbtn" data-mat="lambert">Lambert (mate, sin brillo)</button>
+  <button class="matbtn" data-mat="phong">Phong (brillo especular)</button>
+  <button class="matbtn" data-mat="standard">Standard (PBR realista)</button>
+
+  <h3>Textura procedural</h3>
+  <div>
+    <span class="texbtn" data-tex="none">Ninguna</span>
+    <span class="texbtn" data-tex="stripes">Rayas</span>
+    <span class="texbtn" data-tex="dots">Lunares</span>
+    <span class="texbtn" data-tex="gradient">Degradado</span>
+    <span class="texbtn" data-tex="wood">Madera</span>
+  </div>
+
+  <h3>Proyección de cámara</h3>
+  <div class="projrow">
+    <div class="projbtn active" id="proj-persp">Perspectiva</div>
+    <div class="projbtn" id="proj-ortho">Ortográfica</div>
+  </div>
+
+  <h3>Luces (4)</h3>
+  <div class="lightrow">Direccional <div class="lighttoggle on" data-light="dir"><div class="dot"></div></div></div>
+  <div class="lightrow">Puntual roja <div class="lighttoggle on" data-light="point1"><div class="dot"></div></div></div>
+  <div class="lightrow">Puntual azul <div class="lighttoggle on" data-light="point2"><div class="dot"></div></div></div>
+  <div class="lightrow">Ambiental <div class="lighttoggle on" data-light="ambient"><div class="dot"></div></div></div>
+</div>
+
+<div id="hint">Clic en un objeto para seleccionarlo · Arrastrá para rotar la cámara · Rueda para zoom</div>
+
+<!-- Entry point modular -->
+<script type="module" src="src/index.js"></script>
+</body>
+</html>

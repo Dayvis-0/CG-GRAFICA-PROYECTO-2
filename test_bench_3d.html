@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Laboratorio de Gráficos — Test Bench 3D</title>
+<style>
+  html, body { margin: 0; padding: 0; overflow: hidden; background: #0a0a0f; font-family: 'Courier New', monospace; }
+  canvas { display: block; }
+
+  #hud {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    color: #d7f9ff;
+    background: rgba(10, 14, 20, 0.72);
+    border: 1px solid #2a6f7a;
+    border-radius: 6px;
+    padding: 12px 16px;
+    font-size: 13px;
+    line-height: 1.6;
+    min-width: 250px;
+    backdrop-filter: blur(4px);
+  }
+  #hud h1 {
+    margin: 0 0 8px 0;
+    font-size: 14px;
+    color: #5be3ff;
+    letter-spacing: 1px;
+  }
+  #hud .status { color: #9be8a0; font-weight: bold; }
+  #hud .row { margin-top: 4px; }
+
+  #panel {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    color: #d7f9ff;
+    background: rgba(10, 14, 20, 0.72);
+    border: 1px solid #2a6f7a;
+    border-radius: 6px;
+    padding: 14px 16px;
+    font-size: 12px;
+    width: 230px;
+    backdrop-filter: blur(4px);
+  }
+  #panel h2 {
+    margin: 0 0 10px 0;
+    font-size: 13px;
+    color: #5be3ff;
+    letter-spacing: 1px;
+  }
+  #panel h3 {
+    margin: 14px 0 6px 0;
+    font-size: 11px;
+    color: #7fd0d9;
+    text-transform: uppercase;
+    border-top: 1px solid #1f3d42;
+    padding-top: 10px;
+  }
+  .objbtn {
+    display: inline-block;
+    margin: 2px 3px 2px 0;
+    padding: 5px 9px;
+    background: #11242a;
+    border: 1px solid #2a6f7a;
+    color: #cfeff5;
+    cursor: pointer;
+    border-radius: 4px;
+    font-size: 11px;
+    transition: 0.15s;
+  }
+  .objbtn:hover { background: #1c3a42; }
+  .objbtn.active { background: #5be3ff; color: #061014; border-color: #5be3ff; font-weight: bold; }
+
+  .matbtn {
+    display: block;
+    width: 100%;
+    margin: 3px 0;
+    padding: 6px 8px;
+    background: #11242a;
+    border: 1px solid #2a6f7a;
+    color: #cfeff5;
+    cursor: pointer;
+    border-radius: 4px;
+    font-size: 11px;
+    text-align: left;
+    transition: 0.15s;
+  }
+  .matbtn:hover { background: #1c3a42; }
+  .matbtn.active { background: #9be8a0; color: #06140a; border-color: #9be8a0; font-weight: bold; }
+
+  .texbtn {
+    display: inline-block;
+    margin: 2px 3px 2px 0;
+    padding: 5px 8px;
+    background: #11242a;
+    border: 1px solid #2a6f7a;
+    color: #cfeff5;
+    cursor: pointer;
+    border-radius: 4px;
+    font-size: 10px;
+  }
+  .texbtn:hover { background: #1c3a42; }
+  .texbtn.active { background: #ffb45b; color: #1a0e00; border-color: #ffb45b; font-weight: bold; }
+
+  .lightrow {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin: 3px 0;
+  }
+  .lighttoggle {
+    width: 30px;
+    height: 16px;
+    border-radius: 8px;
+    background: #2a3a3d;
+    position: relative;
+    cursor: pointer;
+    border: 1px solid #444;
+  }
+  .lighttoggle.on { background: #2f8f4f; }
+  .lighttoggle .dot {
+    position: absolute;
+    top: 1px;
+    left: 1px;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: #eee;
+    transition: 0.15s;
+  }
+  .lighttoggle.on .dot { left: 16px; background: #fff; }
+
+  .projbtn {
+    flex: 1;
+    padding: 6px 4px;
+    background: #11242a;
+    border: 1px solid #2a6f7a;
+    color: #cfeff5;
+    cursor: pointer;
+    border-radius: 4px;
+    font-size: 11px;
+    text-align: center;
+  }
+  .projbtn.active { background: #ff7a9c; color: #1a0008; border-color: #ff7a9c; font-weight: bold; }
+  .projrow { display: flex; gap: 4px; }
+
+  #hint {
+    position: absolute;
+    bottom: 12px;
+    left: 12px;
+    color: #6c8b90;
+    font-size: 11px;
+    background: rgba(10, 14, 20, 0.6);
+    padding: 6px 10px;
+    border-radius: 4px;
+  }
+</style>
+</head>
+<body>
+
+<div id="hud">
+  <h1>🔬 TEST BENCH 3D</h1>
+  <div class="row">Objeto: <span class="status" id="hud-obj">Esfera</span></div>
+  <div class="row">Material: <span class="status" id="hud-mat">Phong</span></div>
+  <div class="row">Textura: <span class="status" id="hud-tex">Ninguna</span></div>
+  <div class="row">Proyección: <span class="status" id="hud-proj">Perspectiva</span></div>
+</div>
+
+<div id="panel">
+  <h2>⚙ CONTROLES</h2>
+
+  <h3>Seleccionar objeto</h3>
+  <div id="obj-buttons"></div>
+
+  <h3>Material</h3>
+  <button class="matbtn" data-mat="lambert">Lambert (mate, sin brillo)</button>
+  <button class="matbtn" data-mat="phong">Phong (brillo especular)</button>
+  <button class="matbtn" data-mat="standard">Standard (PBR realista)</button>
+
+  <h3>Textura procedural</h3>
+  <div>
+    <span class="texbtn" data-tex="none">Ninguna</span>
+    <span class="texbtn" data-tex="stripes">Rayas</span>
+    <span class="texbtn" data-tex="dots">Lunares</span>
+    <span class="texbtn" data-tex="gradient">Degradado</span>
+    <span class="texbtn" data-tex="wood">Madera</span>
+  </div>
+
+  <h3>Proyección de cámara</h3>
+  <div class="projrow">
+    <div class="projbtn active" id="proj-persp">Perspectiva</div>
+    <div class="projbtn" id="proj-ortho">Ortográfica</div>
+  </div>
+
+  <h3>Luces (4)</h3>
+  <div class="lightrow">Direccional <div class="lighttoggle on" data-light="dir"><div class="dot"></div></div></div>
+  <div class="lightrow">Puntual roja <div class="lighttoggle on" data-light="point1"><div class="dot"></div></div></div>
+  <div class="lightrow">Puntual azul <div class="lighttoggle on" data-light="point2"><div class="dot"></div></div></div>
+  <div class="lightrow">Ambiental <div class="lighttoggle on" data-light="ambient"><div class="dot"></div></div></div>
+</div>
+
+<div id="hint">Clic en un objeto para seleccionarlo · Arrastrá para rotar la cámara · Rueda para zoom</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+// =========================================================
+// LABORATORIO DE GRÁFICOS — TEST BENCH 3D
+// 4 primitivas, 4 luces, 3 tipos de material, 4 texturas
+// procedurales, switch perspectiva/ortográfica, sombras.
+// =========================================================
+
+let scene, camera, rendererObj, controlsTarget = new THREE.Vector3(0, 1, 0);
+let perspCam, orthoCam, activeCamera;
+let objects = {};
+let selected = null;
+let pedestal;
+
+const W = window.innerWidth, H = window.innerHeight;
+
+// ---------- Escena base ----------
+scene = new THREE.Scene();
+scene.background = new THREE.Color(0x0a0a12);
+scene.fog = new THREE.Fog(0x0a0a12, 10, 28);
+
+rendererObj = new THREE.WebGLRenderer({ antialias: true });
+rendererObj.setSize(W, H);
+rendererObj.shadowMap.enabled = true;
+rendererObj.shadowMap.type = THREE.PCFSoftShadowMap;
+document.body.appendChild(rendererObj.domElement);
+
+// ---------- Cámaras ----------
+perspCam = new THREE.PerspectiveCamera(50, W / H, 0.1, 100);
+perspCam.position.set(0, 5, 11);
+
+orthoCam = new THREE.OrthographicCamera(-7 * (W/H), 7 * (W/H), 7, -7, 0.1, 100);
+orthoCam.position.set(0, 5, 11);
+
+activeCamera = perspCam;
+
+// ---------- Órbita de cámara manual (sin OrbitControls, r128 no la trae por defecto en este setup) ----------
+let isDragging = false, prevX = 0, prevY = 0;
+let camTheta = Math.atan2(11, 0), camPhi = Math.acos(5 / Math.sqrt(5*5+11*11));
+let camDist = Math.sqrt(5*5 + 11*11);
+
+function updateCameraOrbit() {
+  const x = controlsTarget.x + camDist * Math.sin(camPhi) * Math.sin(camTheta);
+  const y = controlsTarget.y + camDist * Math.cos(camPhi);
+  const z = controlsTarget.z + camDist * Math.sin(camPhi) * Math.cos(camTheta);
+  perspCam.position.set(x, y, z);
+  perspCam.lookAt(controlsTarget);
+  orthoCam.position.set(x, y, z);
+  orthoCam.lookAt(controlsTarget);
+}
+updateCameraOrbit();
+
+rendererObj.domElement.addEventListener('mousedown', (e) => {
+  isDragging = true; prevX = e.clientX; prevY = e.clientY;
+});
+window.addEventListener('mouseup', () => isDragging = false);
+window.addEventListener('mousemove', (e) => {
+  if (!isDragging) return;
+  const dx = e.clientX - prevX, dy = e.clientY - prevY;
+  camTheta -= dx * 0.005;
+  camPhi -= dy * 0.005;
+  camPhi = Math.max(0.2, Math.min(Math.PI - 0.2, camPhi));
+  prevX = e.clientX; prevY = e.clientY;
+  updateCameraOrbit();
+});
+rendererObj.domElement.addEventListener('wheel', (e) => {
+  camDist += e.deltaY * 0.01;
+  camDist = Math.max(4, Math.min(22, camDist));
+  updateCameraOrbit();
+});
+
+// ---------- Texturas procedurales (generadas con canvas, sin imágenes externas) ----------
+function makeTexture(drawFn, size = 256) {
+  const cnv = document.createElement('canvas');
+  cnv.width = cnv.height = size;
+  const ctx = cnv.getContext('2d');
+  drawFn(ctx, size);
+  const tex = new THREE.CanvasTexture(cnv);
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  tex.repeat.set(2, 2);
+  return tex;
+}
+
+const TEXTURES = {
+  none: null,
+  stripes: makeTexture((ctx, s) => {
+    ctx.fillStyle = '#222';
+    ctx.fillRect(0, 0, s, s);
+    ctx.fillStyle = '#ffb45b';
+    for (let i = 0; i < s; i += 32) ctx.fillRect(0, i, s, 16);
+  }),
+  dots: makeTexture((ctx, s) => {
+    ctx.fillStyle = '#1a2e35';
+    ctx.fillRect(0, 0, s, s);
+    ctx.fillStyle = '#5be3ff';
+    for (let y = 16; y < s; y += 32) {
+      for (let x = 16; x < s; x += 32) {
+        ctx.beginPath();
+        ctx.arc(x, y, 9, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+  }),
+  gradient: makeTexture((ctx, s) => {
+    const g = ctx.createLinearGradient(0, 0, s, s);
+    g.addColorStop(0, '#ff7a9c');
+    g.addColorStop(0.5, '#9b5bff');
+    g.addColorStop(1, '#5be3ff');
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, s, s);
+  }),
+  wood: makeTexture((ctx, s) => {
+    ctx.fillStyle = '#6b3f23';
+    ctx.fillRect(0, 0, s, s);
+    for (let i = 0; i < 14; i++) {
+      ctx.strokeStyle = `rgba(40,20,8,${0.25 + Math.random() * 0.3})`;
+      ctx.lineWidth = 2 + Math.random() * 4;
+      ctx.beginPath();
+      const yOff = (i / 14) * s + (Math.random() * 6 - 3);
+      ctx.moveTo(0, yOff);
+      for (let x = 0; x <= s; x += 16) {
+        ctx.lineTo(x, yOff + Math.sin(x * 0.05 + i) * 6);
+      }
+      ctx.stroke();
+    }
+  })
+};
+
+// ---------- Material factory ----------
+function buildMaterial(type, color, textureKey) {
+  const tex = TEXTURES[textureKey] || null;
+  const common = { color: color, map: tex };
+  switch (type) {
+    case 'lambert':
+      return new THREE.MeshLambertMaterial(common);
+    case 'phong':
+      return new THREE.MeshPhongMaterial({ ...common, shininess: 90, specular: 0x666666 });
+    case 'standard':
+      return new THREE.MeshStandardMaterial({ ...common, roughness: 0.35, metalness: 0.45 });
+  }
+}
+
+// ---------- Pedestal ----------
+const pedGeo = new THREE.BoxGeometry(14, 0.4, 5.5);
+const pedMat = new THREE.MeshStandardMaterial({ color: 0x1c2228, roughness: 0.8 });
+pedestal = new THREE.Mesh(pedGeo, pedMat);
+pedestal.position.y = -0.2;
+pedestal.receiveShadow = true;
+scene.add(pedestal);
+
+// grid sutil sobre el pedestal
+const grid = new THREE.GridHelper(14, 14, 0x2a6f7a, 0x182228);
+grid.position.y = 0.01;
+scene.add(grid);
+
+// ---------- 4 objetos ----------
+const defs = [
+  { key: 'sphere', label: 'Esfera', geo: new THREE.SphereGeometry(1, 48, 32), x: -4.5, color: 0x5be3ff },
+  { key: 'torus',  label: 'Toro',   geo: new THREE.TorusGeometry(0.9, 0.38, 24, 48), x: -1.5, color: 0xff7a9c },
+  { key: 'cube',   label: 'Cubo',   geo: new THREE.BoxGeometry(1.5, 1.5, 1.5), x: 1.5, color: 0x9be8a0 },
+  { key: 'cone',   label: 'Cono',   geo: new THREE.ConeGeometry(1, 2, 32), x: 4.5, color: 0xffb45b }
+];
+
+defs.forEach(d => {
+  const state = { material: 'phong', texture: 'none', color: d.color };
+  const mat = buildMaterial(state.material, state.color, state.texture);
+  const mesh = new THREE.Mesh(d.geo, mat);
+  mesh.position.set(d.x, 1.1, 0);
+  mesh.castShadow = true;
+  mesh.receiveShadow = true;
+  mesh.userData.key = d.key;
+  mesh.userData.label = d.label;
+  mesh.userData.state = state;
+  scene.add(mesh);
+
+  // anillo de selección (oculto por defecto)
+  const ringGeo = new THREE.RingGeometry(1.5, 1.65, 32);
+  const ringMat = new THREE.MeshBasicMaterial({ color: 0x5be3ff, side: THREE.DoubleSide, transparent: true, opacity: 0.85 });
+  const ring = new THREE.Mesh(ringGeo, ringMat);
+  ring.rotation.x = -Math.PI / 2;
+  ring.position.set(d.x, 0.05, 0);
+  ring.visible = false;
+  scene.add(ring);
+
+  objects[d.key] = { mesh, ring, def: d, state };
+});
+
+// ---------- Luces (4) ----------
+const lights = {};
+
+lights.ambient = new THREE.AmbientLight(0x404560, 0.55);
+scene.add(lights.ambient);
+
+lights.dir = new THREE.DirectionalLight(0xffffff, 0.9);
+lights.dir.position.set(6, 9, 6);
+lights.dir.castShadow = true;
+lights.dir.shadow.mapSize.set(1024, 1024);
+lights.dir.shadow.camera.left = -10;
+lights.dir.shadow.camera.right = 10;
+lights.dir.shadow.camera.top = 10;
+lights.dir.shadow.camera.bottom = -10;
+scene.add(lights.dir);
+
+lights.point1 = new THREE.PointLight(0xff3355, 1.3, 18);
+lights.point1.position.set(-6, 3.5, 4);
+lights.point1.castShadow = true;
+scene.add(lights.point1);
+
+lights.point2 = new THREE.PointLight(0x3399ff, 1.3, 18);
+lights.point2.position.set(6, 3.5, -4);
+lights.point2.castShadow = true;
+scene.add(lights.point2);
+
+// pequeñas esferas visuales para ubicar las luces puntuales
+function lightMarker(light, color) {
+  const m = new THREE.Mesh(new THREE.SphereGeometry(0.12, 12, 12), new THREE.MeshBasicMaterial({ color }));
+  m.position.copy(light.position);
+  scene.add(m);
+}
+lightMarker(lights.point1, 0xff3355);
+lightMarker(lights.point2, 0x3399ff);
+
+// ---------- Selección con raycast ----------
+const raycaster = new THREE.Raycaster();
+const mouseVec = new THREE.Vector2();
+
+function selectObject(key) {
+  if (selected) objects[selected].ring.visible = false;
+  selected = key;
+  objects[key].ring.visible = true;
+  updateHUD();
+  updatePanelForSelection();
+}
+
+rendererObj.domElement.addEventListener('click', (e) => {
+  mouseVec.x = (e.clientX / W) * 2 - 1;
+  mouseVec.y = -(e.clientY / H) * 2 + 1;
+  raycaster.setFromCamera(mouseVec, activeCamera);
+  const meshes = Object.values(objects).map(o => o.mesh);
+  const hits = raycaster.intersectObjects(meshes);
+  if (hits.length > 0) {
+    selectObject(hits[0].object.userData.key);
+  }
+});
+
+// ---------- HUD ----------
+function updateHUD() {
+  const o = objects[selected];
+  document.getElementById('hud-obj').textContent = o.def.label;
+  document.getElementById('hud-mat').textContent = capitalize(o.state.material);
+  document.getElementById('hud-tex').textContent = textureLabel(o.state.texture);
+}
+function capitalize(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
+function textureLabel(key) {
+  return { none: 'Ninguna', stripes: 'Rayas', dots: 'Lunares', gradient: 'Degradado', wood: 'Madera' }[key];
+}
+
+// ---------- Panel: botones de objetos ----------
+const objButtonsDiv = document.getElementById('obj-buttons');
+defs.forEach(d => {
+  const btn = document.createElement('span');
+  btn.className = 'objbtn';
+  btn.textContent = d.label;
+  btn.dataset.key = d.key;
+  btn.onclick = () => selectObject(d.key);
+  objButtonsDiv.appendChild(btn);
+});
+
+function updatePanelForSelection() {
+  document.querySelectorAll('.objbtn').forEach(b => {
+    b.classList.toggle('active', b.dataset.key === selected);
+  });
+  const state = objects[selected].state;
+  document.querySelectorAll('.matbtn').forEach(b => {
+    b.classList.toggle('active', b.dataset.mat === state.material);
+  });
+  document.querySelectorAll('.texbtn').forEach(b => {
+    b.classList.toggle('active', b.dataset.tex === state.texture);
+  });
+}
+
+// ---------- Panel: botones de material ----------
+document.querySelectorAll('.matbtn').forEach(btn => {
+  btn.onclick = () => {
+    const o = objects[selected];
+    o.state.material = btn.dataset.mat;
+    o.mesh.material = buildMaterial(o.state.material, o.state.color, o.state.texture);
+    updateHUD();
+    updatePanelForSelection();
+  };
+});
+
+// ---------- Panel: botones de textura ----------
+document.querySelectorAll('.texbtn').forEach(btn => {
+  btn.onclick = () => {
+    const o = objects[selected];
+    o.state.texture = btn.dataset.tex;
+    o.mesh.material = buildMaterial(o.state.material, o.state.color, o.state.texture);
+    updateHUD();
+    updatePanelForSelection();
+  };
+});
+
+// ---------- Panel: proyección ----------
+const projPersp = document.getElementById('proj-persp');
+const projOrtho = document.getElementById('proj-ortho');
+projPersp.onclick = () => {
+  activeCamera = perspCam;
+  projPersp.classList.add('active');
+  projOrtho.classList.remove('active');
+  document.getElementById('hud-proj').textContent = 'Perspectiva';
+};
+projOrtho.onclick = () => {
+  activeCamera = orthoCam;
+  projOrtho.classList.add('active');
+  projPersp.classList.remove('active');
+  document.getElementById('hud-proj').textContent = 'Ortográfica';
+};
+
+// ---------- Panel: toggles de luces ----------
+document.querySelectorAll('.lighttoggle').forEach(tg => {
+  tg.onclick = () => {
+    const key = tg.dataset.light;
+    const isOn = tg.classList.toggle('on');
+    lights[key].visible = isOn;
+  };
+});
+
+// ---------- Render loop ----------
+function animate() {
+  requestAnimationFrame(animate);
+  // leve rotación ambiental de los objetos no seleccionados, para que se vea "vivo"
+  Object.values(objects).forEach(o => {
+    o.mesh.rotation.y += 0.0035;
+  });
+  rendererObj.render(scene, activeCamera);
+}
+
+// ---------- Resize ----------
+window.addEventListener('resize', () => {
+  const w = window.innerWidth, h = window.innerHeight;
+  perspCam.aspect = w / h;
+  perspCam.updateProjectionMatrix();
+  orthoCam.left = -7 * (w / h);
+  orthoCam.right = 7 * (w / h);
+  orthoCam.updateProjectionMatrix();
+  rendererObj.setSize(w, h);
+});
+
+// ---------- Inicialización ----------
+selectObject('torus'); // arranca con el Toro seleccionado, como en el ejemplo del HUD
+animate();
+</script>
+</body>
+</html>
