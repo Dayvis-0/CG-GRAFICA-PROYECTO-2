@@ -1,0 +1,290 @@
+:root {
+    --bg: #050510;
+    --fg: #e0e0f0;
+    --muted: #6a6a8a;
+    --accent: #00ffaa;
+    --accent2: #ff3366;
+    --accent-dim: rgba(0, 255, 170, 0.12);
+    --card: rgba(255,255,255,0.05);
+    --border: rgba(255,255,255,0.08);
+    --panel-bg: rgba(8, 8, 24, 0.88);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+    font-family: 'Space Grotesk', sans-serif;
+    background: var(--bg);
+    color: var(--fg);
+    overflow: hidden;
+    height: 100vh;
+}
+
+.font-display { font-family: 'Orbitron', monospace; }
+
+#canvas-container { position: fixed; inset: 0; z-index: 0; }
+
+/* ===== OVERLAY INICIAL ===== */
+#overlay {
+    transition: opacity 0.7s ease, visibility 0.7s ease;
+}
+#overlay.hidden-overlay {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+}
+
+/* ===== ZONA DE SUBIDA ===== */
+.upload-zone {
+    border: 2px dashed var(--accent);
+    border-radius: 1.5rem;
+    padding: 2.5rem 3.5rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    background: rgba(0, 255, 170, 0.03);
+}
+.upload-zone:hover {
+    background: rgba(0, 255, 170, 0.08);
+    border-color: #44ffcc;
+    transform: scale(1.03);
+    box-shadow: 0 0 50px rgba(0, 255, 170, 0.15);
+}
+
+/* ===== BARRA DE CONTROLES ===== */
+#controls-bar {
+    transition: opacity 0.6s ease, transform 0.6s ease;
+}
+#controls-bar.hidden-bar {
+    opacity: 0;
+    transform: translateY(24px);
+    pointer-events: none;
+}
+
+.ctrl-btn {
+    width: 42px; height: 42px;
+    border-radius: 50%;
+    border: 1px solid var(--border);
+    background: var(--card);
+    color: var(--accent);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 0.95rem;
+    flex-shrink: 0;
+}
+.ctrl-btn:hover {
+    background: rgba(0, 255, 170, 0.15);
+    border-color: var(--accent);
+    box-shadow: 0 0 18px rgba(0, 255, 170, 0.2);
+}
+
+.progress-bar {
+    height: 5px;
+    background: rgba(255,255,255,0.07);
+    border-radius: 3px;
+    cursor: pointer;
+    overflow: hidden;
+}
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    border-radius: 3px;
+    width: 0%;
+    transition: width 0.15s linear;
+}
+
+/* ===== PANEL DE CONCEPTOS (HUD) ===== */
+#concept-panel {
+    position: fixed;
+    top: 16px;
+    right: 16px;
+    z-index: 15;
+    width: 220px;
+    background: var(--panel-bg);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 14px 16px;
+    backdrop-filter: blur(20px);
+    font-size: 0.78rem;
+    user-select: none;
+    transition: opacity 0.6s ease, transform 0.6s ease;
+    max-height: calc(100vh - 32px);
+    overflow-y: auto;
+}
+
+.cp-header {
+    font-family: 'Orbitron', monospace;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    color: var(--accent);
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.cp-section {
+    margin-bottom: 12px;
+}
+.cp-section:last-child {
+    margin-bottom: 0;
+}
+
+.cp-label {
+    font-size: 0.68rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+    margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.cp-btn-group {
+    display: flex;
+    gap: 4px;
+}
+
+.cp-btn {
+    flex: 1;
+    padding: 5px 0;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: transparent;
+    color: var(--muted);
+    font-size: 0.7rem;
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+.cp-btn:hover {
+    border-color: var(--accent);
+    color: var(--fg);
+    background: var(--accent-dim);
+}
+.cp-btn-active {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: var(--accent-dim);
+    box-shadow: 0 0 12px rgba(0, 255, 170, 0.1);
+}
+
+.cp-btn-wide {
+    width: 100%;
+    padding: 7px 0;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: transparent;
+    color: var(--muted);
+    font-size: 0.7rem;
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+}
+.cp-btn-wide:hover {
+    border-color: var(--accent2);
+    color: var(--accent2);
+    background: rgba(255, 51, 102, 0.1);
+}
+
+.cp-status {
+    font-size: 0.68rem;
+    color: var(--accent);
+    margin-top: 3px;
+    font-weight: 500;
+}
+
+/* ===== LIGHT TOGGLES (SWITCH) ===== */
+.cp-light-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 3px 0;
+}
+.cp-light-name {
+    font-size: 0.72rem;
+    color: var(--fg);
+}
+
+.cp-switch {
+    position: relative;
+    display: inline-block;
+    width: 32px;
+    height: 18px;
+    flex-shrink: 0;
+}
+.cp-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+.cp-slider {
+    position: absolute;
+    cursor: pointer;
+    inset: 0;
+    background: rgba(255,255,255,0.12);
+    border-radius: 18px;
+    transition: background 0.25s ease;
+}
+.cp-slider::before {
+    content: '';
+    position: absolute;
+    height: 14px;
+    width: 14px;
+    left: 2px;
+    bottom: 2px;
+    background: #555;
+    border-radius: 50%;
+    transition: all 0.25s ease;
+}
+.cp-switch input:checked + .cp-slider {
+    background: var(--accent-dim);
+}
+.cp-switch input:checked + .cp-slider::before {
+    background: var(--accent);
+    transform: translateX(14px);
+}
+
+/* ===== ANIMACIONES ===== */
+@keyframes float-y {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+}
+.float-anim { animation: float-y 3s ease-in-out infinite; }
+
+@keyframes pulse-border {
+    0%, 100% { box-shadow: 0 0 20px rgba(0,255,170,0.08); }
+    50% { box-shadow: 0 0 45px rgba(0,255,170,0.22); }
+}
+.pulse-glow { animation: pulse-border 2.5s ease-in-out infinite; }
+
+.drag-active .upload-zone {
+    background: rgba(0,255,170,0.15) !important;
+    border-color: #66ffdd !important;
+    transform: scale(1.06) !important;
+}
+
+/* ===== SCROLLBAR ===== */
+#concept-panel::-webkit-scrollbar {
+    width: 3px;
+}
+#concept-panel::-webkit-scrollbar-track {
+    background: transparent;
+}
+#concept-panel::-webkit-scrollbar-thumb {
+    background: var(--border);
+    border-radius: 3px;
+}
