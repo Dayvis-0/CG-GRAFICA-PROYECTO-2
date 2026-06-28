@@ -22,9 +22,7 @@ export function setupInterface({ renderer, objects, cameras, activeCameraRef, li
     const raycaster = new THREE.Raycaster();
     const mouseVec  = new THREE.Vector2();
 
-    // =============================================
     //  HELPERS
-    // =============================================
     function capitalize(s) {
         return s.charAt(0).toUpperCase() + s.slice(1);
     }
@@ -62,9 +60,7 @@ export function setupInterface({ renderer, objects, cameras, activeCameraRef, li
         });
     }
 
-    // =============================================
     //  SELECCIÓN
-    // =============================================
     function selectObject(key) {
         if (selected) objects[selected].ring.visible = false;
         selected = key;
@@ -86,9 +82,7 @@ export function setupInterface({ renderer, objects, cameras, activeCameraRef, li
         }
     });
 
-    // =============================================
     //  PANEL — Botones de objeto
-    // =============================================
     const objButtonsDiv = document.getElementById('obj-buttons');
     Object.values(objects).forEach(o => {
         const btn = document.createElement('span');
@@ -99,9 +93,7 @@ export function setupInterface({ renderer, objects, cameras, activeCameraRef, li
         objButtonsDiv.appendChild(btn);
     });
 
-    // =============================================
     //  PANEL — Botones de material
-    // =============================================
     document.querySelectorAll('.matbtn').forEach(btn => {
         btn.onclick = () => {
             const o = objects[selected];
@@ -112,9 +104,7 @@ export function setupInterface({ renderer, objects, cameras, activeCameraRef, li
         };
     });
 
-    // =============================================
     //  PANEL — Botones de textura
-    // =============================================
     document.querySelectorAll('.texbtn').forEach(btn => {
         btn.onclick = () => {
             const o = objects[selected];
@@ -125,9 +115,7 @@ export function setupInterface({ renderer, objects, cameras, activeCameraRef, li
         };
     });
 
-    // =============================================
     //  PANEL — Proyección (perspectiva / ortográfica)
-    // =============================================
     document.getElementById('proj-persp').onclick = () => {
         activeCameraRef.current = perspCam;
         document.getElementById('proj-persp').classList.add('active');
@@ -142,9 +130,7 @@ export function setupInterface({ renderer, objects, cameras, activeCameraRef, li
         document.getElementById('hud-proj').textContent = 'Ortográfica';
     };
 
-    // =============================================
     //  PANEL — Toggles de luces
-    // =============================================
     document.querySelectorAll('.lighttoggle').forEach(tg => {
         tg.onclick = () => {
             const key = tg.dataset.light;
@@ -153,8 +139,6 @@ export function setupInterface({ renderer, objects, cameras, activeCameraRef, li
         };
     });
 
-    // =============================================
     //  INICIALIZAR — arranca con el Toro seleccionado
-    // =============================================
     selectObject('torus');
 }

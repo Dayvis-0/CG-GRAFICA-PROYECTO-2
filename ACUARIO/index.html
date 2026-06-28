@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Acuario 3D Nocturno — Gráficos por Computadora</title>
+
+    <!-- Tailwind -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Fuentes -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Space+Grotesk:wght@300;400;500;700&display=swap" rel="stylesheet">
+
+    <!-- Iconos -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+    <!-- Estilos propios -->
+    <link rel="stylesheet" href="style.css">
+
+    <!-- Importmap Three.js -->
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+            "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+        }
+    }
+    </script>
+</head>
+<body>
+
+    <!-- Canvas 3D -->
+    <div id="canvas-container"></div>
+
+    <!-- ===== OVERLAY INICIAL ===== -->
+    <div id="overlay" class="fixed inset-0 z-20 flex items-center justify-center bg-black/55 backdrop-blur-sm">
+        <div class="text-center max-w-md px-6">
+            <div class="float-anim mb-5">
+                <i class="fas fa-fish text-5xl" style="color:var(--accent)"></i>
+            </div>
+            <h1 class="font-display text-2xl sm:text-4xl font-black mb-2 tracking-widest" style="color:var(--fg)">
+                ACUARIO 3D
+            </h1>
+            <p class="text-sm sm:text-base mb-6" style="color:var(--muted)">
+                Acuario nocturno interactivo con peces, burbujas y plantas acuáticas
+            </p>
+            <p class="text-xs mb-6 uppercase tracking-wider" style="color:var(--accent2)">
+                Proyecto — Gráficos 3D y Técnicas Avanzadas
+            </p>
+            <button id="startBtn" class="upload-zone pulse-glow inline-block cursor-pointer">
+                <div class="flex flex-col items-center gap-3 px-8 py-5">
+                    <i class="fas fa-play text-3xl" style="color:var(--accent)"></i>
+                    <span class="font-display text-xs sm:text-sm tracking-widest" style="color:var(--accent)">
+                        INGRESAR AL ACUARIO
+                    </span>
+                </div>
+            </button>
+            <p class="text-xs mt-4" style="color:var(--muted)">Arrastrá para rotar · Rueda para zoom</p>
+        </div>
+    </div>
+
+    <!-- ===== PANEL DE CONCEPTOS (HUD) ===== -->
+    <div id="concept-panel">
+        <div class="cp-header">
+            <i class="fas fa-fish"></i> CONCEPTOS 3D
+        </div>
+
+        <!-- Material de peces -->
+        <div class="cp-section">
+            <div class="cp-label">
+                <i class="fas fa-palette"></i> Material Peces
+            </div>
+            <div class="cp-btn-group" id="materialGroup">
+                <button class="cp-btn" data-value="lambert">Lambert</button>
+                <button class="cp-btn" data-value="phong">Phong</button>
+                <button class="cp-btn cp-btn-active" data-value="standard">Standard</button>
+            </div>
+            <div class="cp-status" id="materialStatus">→ Standard</div>
+        </div>
+
+        <!-- Cámara -->
+        <div class="cp-section">
+            <div class="cp-label">
+                <i class="fas fa-camera"></i> Cámara
+            </div>
+            <button class="cp-btn cp-btn-wide" id="cameraToggle">
+                <i class="fas fa-exchange-alt"></i> Cambiar a Ortográfica
+            </button>
+            <div class="cp-status" id="cameraStatus">→ Perspectiva</div>
+        </div>
+
+        <!-- Luces -->
+        <div class="cp-section">
+            <div class="cp-label">
+                <i class="fas fa-lightbulb"></i> Luces
+            </div>
+            <div class="cp-light-row">
+                <span class="cp-light-name">Superior</span>
+                <label class="cp-switch">
+                    <input type="checkbox" checked data-light="directional">
+                    <span class="cp-slider"></span>
+                </label>
+            </div>
+            <div class="cp-light-row">
+                <span class="cp-light-name">Submarina 1</span>
+                <label class="cp-switch">
+                    <input type="checkbox" checked data-light="submarine1">
+                    <span class="cp-slider"></span>
+                </label>
+            </div>
+            <div class="cp-light-row">
+                <span class="cp-light-name">Submarina 2</span>
+                <label class="cp-switch">
+                    <input type="checkbox" checked data-light="submarine2">
+                    <span class="cp-slider"></span>
+                </label>
+            </div>
+            <div class="cp-light-row">
+                <span class="cp-light-name">Ambiental</span>
+                <label class="cp-switch">
+                    <input type="checkbox" checked data-light="ambient">
+                    <span class="cp-slider"></span>
+                </label>
+            </div>
+        </div>
+
+        <!-- Efectos -->
+        <div class="cp-section">
+            <div class="cp-label">
+                <i class="fas fa-magic"></i> Efectos
+            </div>
+            <div class="cp-light-row">
+                <span class="cp-light-name">Agua transparente</span>
+                <label class="cp-switch">
+                    <input type="checkbox" checked id="waterToggle">
+                    <span class="cp-slider"></span>
+                </label>
+            </div>
+            <div class="cp-light-row">
+                <span class="cp-light-name">Sombras</span>
+                <label class="cp-switch">
+                    <input type="checkbox" checked id="shadowsToggle">
+                    <span class="cp-slider"></span>
+                </label>
+            </div>
+            <div class="cp-light-row">
+                <span class="cp-light-name">Textura fondo</span>
+                <label class="cp-switch">
+                    <input type="checkbox" checked id="textureToggle">
+                    <span class="cp-slider"></span>
+                </label>
+            </div>
+        </div>
+    </div>
+
+    <!-- Entry point modular -->
+    <script type="module" src="src/index.js"></script>
+</body>
+</html>
