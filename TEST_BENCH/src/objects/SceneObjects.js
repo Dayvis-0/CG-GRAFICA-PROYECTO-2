@@ -39,7 +39,7 @@ export function createSceneObjects(buildMaterial) {
 
     // --- 4 objetos ---
     defs.forEach(d => {
-        const state = { material: 'phong', texture: 'none', color: d.color };
+        const state = { material: 'phong', texture: 'none', color: d.color, wireframe: false };
         const mat = buildMaterial(state.material, state.color, state.texture);
         const mesh = new THREE.Mesh(d.geo(), mat);
         mesh.position.set(d.x, 1.1, 0);

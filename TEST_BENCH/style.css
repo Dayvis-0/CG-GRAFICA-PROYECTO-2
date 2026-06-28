@@ -149,3 +149,18 @@ canvas { display: block; }
     padding: 6px 10px;
     border-radius: 4px;
 }
+
+.wfbtn {
+    display: inline-block;
+    padding: 6px 14px;
+    background: #11242a;
+    border: 1px solid #2a6f7a;
+    color: #cfeff5;
+    cursor: pointer;
+    border-radius: 4px;
+    font-size: 11px;
+    transition: 0.15s;
+    user-select: none;
+}
+.wfbtn:hover { background: #1c3a42; }
+.wfbtn.active { background: #e060c0; color: #0a0010; border-color: #e060c0; font-weight: bold; }

@@ -42,6 +42,7 @@ export function setupInterface({ renderer, objects, cameras, activeCameraRef, li
         document.getElementById('hud-obj').textContent = o.def.label;
         document.getElementById('hud-mat').textContent = capitalize(o.state.material);
         document.getElementById('hud-tex').textContent = textureLabel(o.state.texture);
+        document.getElementById('hud-wf').textContent = o.state.wireframe ? 'Sí' : 'No';
     }
 
     function updatePanelSelection() {
@@ -58,6 +59,10 @@ export function setupInterface({ renderer, objects, cameras, activeCameraRef, li
         document.querySelectorAll('.texbtn').forEach(b => {
             b.classList.toggle('active', b.dataset.tex === st.texture);
         });
+        // Botón wireframe
+        const wfBtn = document.getElementById('wf-btn');
+        wfBtn.classList.toggle('active', st.wireframe);
+        wfBtn.textContent = st.wireframe ? 'Wireframe: ON' : 'Wireframe: OFF';
     }
 
     //  SELECCIÓN
@@ -98,7 +103,7 @@ export function setupInterface({ renderer, objects, cameras, activeCameraRef, li
         btn.onclick = () => {
             const o = objects[selected];
             o.state.material = btn.dataset.mat;
-            o.mesh.material = buildMaterial(o.state.material, o.state.color, o.state.texture);
+            o.mesh.material = buildMaterial(o.state.material, o.state.color, o.state.texture, o.state.wireframe);
             updateHUD();
             updatePanelSelection();
         };
@@ -109,7 +114,7 @@ export function setupInterface({ renderer, objects, cameras, activeCameraRef, li
         btn.onclick = () => {
             const o = objects[selected];
             o.state.texture = btn.dataset.tex;
-            o.mesh.material = buildMaterial(o.state.material, o.state.color, o.state.texture);
+            o.mesh.material = buildMaterial(o.state.material, o.state.color, o.state.texture, o.state.wireframe);
             updateHUD();
             updatePanelSelection();
         };
@@ -138,6 +143,15 @@ export function setupInterface({ renderer, objects, cameras, activeCameraRef, li
             lights[key].visible = isOn;
         };
     });
+
+    //  PANEL — Botón wireframe
+    document.getElementById('wf-btn').onclick = () => {
+        const o = objects[selected];
+        o.state.wireframe = !o.state.wireframe;
+        o.mesh.material = buildMaterial(o.state.material, o.state.color, o.state.texture, o.state.wireframe);
+        updateHUD();
+        updatePanelSelection();
+    };
 
     //  MOVIMIENTO POR TECLADO (flechas)
     window.addEventListener('keydown', (e) => {

@@ -6,9 +6,9 @@ import * as THREE from 'three';
  * @returns {function} buildMaterial(type, color, textureKey)
  */
 export function createMaterialFactory(textures) {
-    return function buildMaterial(type, color, textureKey) {
+    return function buildMaterial(type, color, textureKey, wireframe = false) {
         const tex = textures[textureKey] || null;
-        const common = { color, map: tex };
+        const common = { color, map: tex, wireframe };
 
         switch (type) {
             case 'lambert':
