@@ -139,6 +139,24 @@ export function setupInterface({ renderer, objects, cameras, activeCameraRef, li
         };
     });
 
+    //  MOVIMIENTO POR TECLADO (flechas)
+    window.addEventListener('keydown', (e) => {
+        if (!selected) return;
+
+        const o = objects[selected];
+        const step = 0.15;
+
+        switch (e.key) {
+            case 'ArrowUp':    o.mesh.position.z -= step; o.ring.position.z -= step; break;
+            case 'ArrowDown':  o.mesh.position.z += step; o.ring.position.z += step; break;
+            case 'ArrowLeft':  o.mesh.position.x -= step; o.ring.position.x -= step; break;
+            case 'ArrowRight': o.mesh.position.x += step; o.ring.position.x += step; break;
+            default:           return;
+        }
+
+        e.preventDefault();
+    });
+
     //  INICIALIZAR — arranca con el Toro seleccionado
     selectObject('torus');
 }
