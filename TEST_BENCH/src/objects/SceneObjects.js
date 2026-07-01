@@ -2,10 +2,10 @@ import * as THREE from 'three';
 
 //  DEFINICIÓN DE LAS 4 PRIMITIVAS
 const defs = [
-    { key: 'sphere', label: 'Esfera',  geo: () => new THREE.SphereGeometry(1, 48, 32),       x: -4.5, color: 0x5be3ff },
-    { key: 'torus',  label: 'Toro',    geo: () => new THREE.TorusGeometry(0.9, 0.38, 24, 48), x: -1.5, color: 0xff7a9c },
-    { key: 'cube',   label: 'Cubo',    geo: () => new THREE.BoxGeometry(1.5, 1.5, 1.5),       x:  1.5, color: 0x9be8a0 },
-    { key: 'cone',   label: 'Cono',    geo: () => new THREE.ConeGeometry(1, 2, 32),            x:  4.5, color: 0xffb45b },
+    { key: 'sphere', label: 'Esfera',  geo: () => new THREE.SphereGeometry(1, 48, 32),       x: -4.5, color: 0x5be3ff, boundingRadius: 1.05 },
+    { key: 'torus',  label: 'Toro',    geo: () => new THREE.TorusGeometry(0.9, 0.38, 24, 48), x: -1.5, color: 0xff7a9c, boundingRadius: 1.20 },
+    { key: 'cube',   label: 'Cubo',    geo: () => new THREE.BoxGeometry(1.5, 1.5, 1.5),       x:  1.5, color: 0x9be8a0, boundingRadius: 1.10 },
+    { key: 'cone',   label: 'Cono',    geo: () => new THREE.ConeGeometry(1, 2, 32),            x:  4.5, color: 0xffb45b, boundingRadius: 1.05 },
 ];
 
 const RING_GEO = new THREE.RingGeometry(1.5, 1.65, 32);

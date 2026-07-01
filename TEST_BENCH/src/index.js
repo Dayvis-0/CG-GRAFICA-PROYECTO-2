@@ -11,11 +11,7 @@ import { setupCameraOrbit }   from './controls/CameraOrbit.js';
 import { setupInterface }     from './ui/Interface.js';
 import { setupResize }        from './utils/ResizeHandler.js';
 import { startAnimation }     from './animations/AnimationLoop.js';
-
-
-// =============================================
-//  ORQUESTADOR PRINCIPAL
-// =============================================
+import { createCollisionSystem } from './physics/CollisionSystem.js';
 
 // --- Escena ---
 const scene = createScene();
@@ -48,6 +44,9 @@ Object.values(objects).forEach(o => {
 const { lights, markers } = createLights(scene);
 // Los marcadores ya se agregan dentro de createLights()
 
+// --- Sistema de colisiones (push + stack) ---
+const collision = createCollisionSystem(objects);
+
 // --- Órbita de cámara manual ---
 setupCameraOrbit(cameras, renderer);
 
@@ -59,6 +58,7 @@ setupInterface({
     activeCameraRef,
     lights,
     buildMaterial,
+    collision,
 });
 
 // --- Responsive ---

@@ -44,6 +44,7 @@ export function setupCameraOrbit(cameras, renderer) {
 
     window.addEventListener('mousemove', (e) => {
         if (!isDragging) return;
+        if (window.__dragObject) return; // ← si se está arrastrando un objeto, no rotar cámara
         const dx = e.clientX - prevX;
         const dy = e.clientY - prevY;
         camTheta -= dx * 0.005;

@@ -4,7 +4,7 @@ import * as THREE from 'three';
  * Configura TODA la interfaz de usuario:
  *  - HUD (información del objeto seleccionado)
  *  - Panel de control (objetos, materiales, texturas, proyección, luces)
- *  - Selección por clic en el viewport (raycaster)
+ *  - Drag & drop con mouse (movimiento + auto‑stack continuo)
  *
  * @param {object} options
  * @param {THREE.WebGLRenderer}  options.renderer
@@ -13,8 +13,9 @@ import * as THREE from 'three';
  * @param {{ current: THREE.Camera }}  options.activeCameraRef
  * @param {object}               options.lights        — { ambient, dir, point1, point2 }
  * @param {function}             options.buildMaterial — (type, color, texKey) => Material
+ * @param {object}               options.collision     — { tryMove, dragMove, stackSelected, isStacked }
  */
-export function setupInterface({ renderer, objects, cameras, activeCameraRef, lights, buildMaterial }) {
+export function setupInterface({ renderer, objects, cameras, activeCameraRef, lights, buildMaterial, collision }) {
     const { perspCam, orthoCam } = cameras;
 
     let selected = null;
@@ -43,6 +44,8 @@ export function setupInterface({ renderer, objects, cameras, activeCameraRef, li
         document.getElementById('hud-mat').textContent = capitalize(o.state.material);
         document.getElementById('hud-tex').textContent = textureLabel(o.state.texture);
         document.getElementById('hud-wf').textContent = o.state.wireframe ? 'Sí' : 'No';
+        // No mostramos estado de stack en HUD para no saturar, pero
+        // se nota visualmente por la posición Y del objeto
     }
 
     function updatePanelSelection() {
@@ -74,8 +77,16 @@ export function setupInterface({ renderer, objects, cameras, activeCameraRef, li
         updatePanelSelection();
     }
 
-    // --- Raycaster: clic en el viewport ---
-    renderer.domElement.addEventListener('click', (e) => {
+    // ──────────────────────────────────────────────
+    //  DRAG & DROP de objetos con el mouse
+    // ──────────────────────────────────────────────
+    const dragPlane      = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+    const dragPrevPoint  = new THREE.Vector3();
+    let   isDragging     = false;
+    let   dragKey        = null;
+    let   dragTotalDist  = 0;
+
+    renderer.domElement.addEventListener('mousedown', (e) => {
         mouseVec.x =  (e.clientX / window.innerWidth)  * 2 - 1;
         mouseVec.y = -(e.clientY / window.innerHeight) * 2 + 1;
         raycaster.setFromCamera(mouseVec, activeCameraRef.current);
@@ -83,8 +94,48 @@ export function setupInterface({ renderer, objects, cameras, activeCameraRef, li
         const meshes = Object.values(objects).map(o => o.mesh);
         const hits = raycaster.intersectObjects(meshes);
         if (hits.length > 0) {
-            selectObject(hits[0].object.userData.key);
+            const key = hits[0].object.userData.key;
+            selectObject(key);
+
+            // Iniciar drag
+            isDragging    = true;
+            dragKey       = key;
+            dragTotalDist = 0;
+
+            const pt = new THREE.Vector3();
+            raycaster.ray.intersectPlane(dragPlane, pt);
+            if (pt) dragPrevPoint.copy(pt);
+
+            window.__dragObject = true;  // ← avisa al orbit que no rote
+            e.preventDefault();
         }
+    });
+
+    window.addEventListener('mousemove', (e) => {
+        if (!isDragging || !dragKey) return;
+
+        mouseVec.x =  (e.clientX / window.innerWidth)  * 2 - 1;
+        mouseVec.y = -(e.clientY / window.innerHeight) * 2 + 1;
+        raycaster.setFromCamera(mouseVec, activeCameraRef.current);
+
+        const pt = new THREE.Vector3();
+        raycaster.ray.intersectPlane(dragPlane, pt);
+        if (pt) {
+            const dx = pt.x - dragPrevPoint.x;
+            const dz = pt.z - dragPrevPoint.z;
+            dragPrevPoint.copy(pt);
+            dragTotalDist += Math.abs(dx) + Math.abs(dz);
+
+            collision.dragMove(dragKey, dx, dz);
+        }
+    });
+
+    window.addEventListener('mouseup', () => {
+        // El stacking ya ocurre en tiempo real durante dragMove()
+        isDragging    = false;
+        dragKey       = null;
+        dragTotalDist = 0;
+        window.__dragObject = false;
     });
 
     //  PANEL — Botones de objeto
@@ -153,22 +204,20 @@ export function setupInterface({ renderer, objects, cameras, activeCameraRef, li
         updatePanelSelection();
     };
 
-    //  MOVIMIENTO POR TECLADO (flechas)
+    //  MOVIMIENTO POR TECLADO (flechas + stacking)
     window.addEventListener('keydown', (e) => {
         if (!selected) return;
 
-        const o = objects[selected];
         const step = 0.15;
 
         switch (e.key) {
-            case 'ArrowUp':    o.mesh.position.z -= step; o.ring.position.z -= step; break;
-            case 'ArrowDown':  o.mesh.position.z += step; o.ring.position.z += step; break;
-            case 'ArrowLeft':  o.mesh.position.x -= step; o.ring.position.x -= step; break;
-            case 'ArrowRight': o.mesh.position.x += step; o.ring.position.x += step; break;
-            default:           return;
-        }
+            case 'ArrowUp':    collision.tryMove(selected,  0, -step); e.preventDefault(); break;
+            case 'ArrowDown':  collision.tryMove(selected,  0,  step); e.preventDefault(); break;
+            case 'ArrowLeft':  collision.tryMove(selected, -step,  0); e.preventDefault(); break;
+            case 'ArrowRight': collision.tryMove(selected,  step,  0); e.preventDefault(); break;
 
-        e.preventDefault();
+            default: return;
+        }
     });
 
     //  INICIALIZAR — arranca con el Toro seleccionado

@@ -1,0 +1,36 @@
+html, body {
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    background: #0a0a12;
+    font-family: 'Courier New', monospace;
+}
+canvas {
+    display: block;
+}
+
+#stage-badge {
+    position: absolute;
+    top: 14px;
+    left: 14px;
+    color: #c8e6e8;
+    background: rgba(8, 12, 18, 0.75);
+    border: 1px solid #1f6a7a;
+    border-radius: 6px;
+    padding: 10px 16px;
+    font-size: 12px;
+    backdrop-filter: blur(4px);
+    user-select: none;
+}
+#stage-badge h1 {
+    margin: 0;
+    font-size: 16px;
+    color: #4cd8e8;
+    letter-spacing: 1px;
+}
+#stage-badge .stage {
+    display: inline-block;
+    margin-top: 4px;
+    color: #7aacb0;
+    font-size: 11px;
+}

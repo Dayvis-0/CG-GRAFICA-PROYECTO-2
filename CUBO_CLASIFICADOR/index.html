@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Cubo Clasificador 3D</title>
+
+<!-- Estilos -->
+<link rel="stylesheet" href="style.css">
+
+<!-- Importmap Three.js -->
+<script type="importmap">
+{
+    "imports": {
+        "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+        "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+    }
+}
+</script>
+</head>
+<body>
+
+<!-- Indicador de etapa -->
+<div id="stage-badge">
+  <h1>■ CUBO CLASIFICADOR</h1>
+  <span class="stage">Etapa 1 — Estructura base</span>
+</div>
+
+<!-- Entry point modular -->
+<script type="module" src="src/index.js"></script>
+</body>
+</html>
