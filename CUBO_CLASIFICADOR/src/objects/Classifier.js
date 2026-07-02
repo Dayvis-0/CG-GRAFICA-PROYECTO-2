@@ -72,12 +72,12 @@ function rectHole(cx, cy, w, h) {
 // ---------------------------------------------------------------------------
 
 const HOLE_CONFIGS = [
-    { label: 'Esfera',   shape: 'circle',   cx: -1.2, cy:  1.2, params: { r: 0.42 } },
-    { label: 'Cubo',     shape: 'square',   cx:  0,   cy:  1.2, params: { side: 0.72 } },
-    { label: 'Cono',     shape: 'triangle', cx:  1.2, cy:  1.2, params: { r: 0.48 } },
-    { label: 'Cilindro', shape: 'circle',   cx: -1.2, cy: -1.2, params: { r: 0.36 } },
-    { label: 'Pirámide', shape: 'diamond',  cx:  0,   cy: -1.2, params: { rx: 0.46, ry: 0.46 } },
-    { label: 'Prisma',   shape: 'rect',     cx:  1.2, cy: -1.2, params: { w: 0.72, h: 0.38 } },
+    { label: 'Esfera',   shape: 'circle',   cx: -1.2, cy:  1.2, params: { r: 0.6 } },
+    { label: 'Cubo',     shape: 'square',   cx:  0,   cy:  1.2, params: { side: 1.0 } },
+    { label: 'Cono',     shape: 'triangle', cx:  1.2, cy:  1.2, params: { r: 0.7 } },
+    { label: 'Cilindro', shape: 'circle',   cx: -1.2, cy: -1.2, params: { r: 0.55 } },
+    { label: 'Pirámide', shape: 'diamond',  cx:  0,   cy: -1.2, params: { rx: 0.65, ry: 0.65 } },
+    { label: 'Prisma',   shape: 'rect',     cx:  1.2, cy: -1.2, params: { w: 1.0, h: 0.55 } },
 ];
 
 // ---------------------------------------------------------------------------
@@ -85,7 +85,7 @@ const HOLE_CONFIGS = [
 // ---------------------------------------------------------------------------
 
 const OUTER       = 4;      // ancho y fondo exterior
-const WALL_THICK  = 0.15;   // grosor de cada pared
+const WALL_THICK  = 0.08;   // grosor de cada pared (más delgada = más hueco)
 const WALL_HEIGHT = 2.5;    // altura de las paredes (sin tapa)
 const PANEL_DEPTH = 0.5;    // grosor del panel superior con huecos
 const MID         = OUTER / 2;
