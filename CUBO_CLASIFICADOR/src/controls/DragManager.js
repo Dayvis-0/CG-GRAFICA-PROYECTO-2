@@ -93,6 +93,9 @@ export function setupDragManager(activeCameraRef, renderer, { piecesGroup, class
         window.__draggingPiece = true;
         notifySelect(selected);
 
+        // Capturar el pointer para no perder eventos aunque salga del canvas
+        renderer.domElement.setPointerCapture(e.pointerId);
+
         activeCameraRef.current.getWorldDirection(camDir);
         dragPlane.setFromNormalAndCoplanarPoint(camDir, selected.position);
         raycaster.ray.intersectPlane(dragPlane, target);

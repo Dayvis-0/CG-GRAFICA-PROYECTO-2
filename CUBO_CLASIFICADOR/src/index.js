@@ -92,10 +92,33 @@ interfaceCtrl = setupInterface({
 setupResize(cameras, renderer, activeCameraRef);
 
 // ──────────────────────────────────────────────
-// 13. Bucle de renderizado
+// 13. Bucle de renderizado con gravedad
 // ──────────────────────────────────────────────
+const GRAVITY = 0.008;
+
 function animate() {
     requestAnimationFrame(animate);
+
+    // Gravedad: las piezas elevadas caen hasta su minY
+    // Solo si se está arrastrando activamente, saltamos esa pieza
+    const draggedMesh = window.__draggingPiece ? dragManager.getSelected() : null;
+    for (const child of pieces.children) {
+        if (!child.isMesh) continue;
+        if (child === draggedMesh) {
+            child.userData.velY = 0; // se está arrastrando → sin gravedad
+            continue;
+        }
+        const minY = child.userData.minY;
+        if (child.position.y > minY) {
+            child.userData.velY += GRAVITY;
+            child.position.y -= child.userData.velY;
+            if (child.position.y <= minY) {
+                child.position.y = minY;
+                child.userData.velY = 0;
+            }
+        }
+    }
+
     renderer.render(scene, activeCameraRef.current);
 }
 animate();

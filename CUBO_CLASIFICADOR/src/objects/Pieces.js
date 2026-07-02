@@ -36,6 +36,7 @@ export function createPieces() {
         mesh.receiveShadow = true;
         mesh.userData.label = cfg.label;
         mesh.userData.minY = cfg.pieceY;
+        mesh.userData.velY = 0;
         group.add(mesh);
     }
 
