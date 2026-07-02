@@ -2,7 +2,7 @@ import * as THREE from 'three';
 
 /**
  * Crea el suelo de la escena: plano base + marco elevado tipo caja.
- * @returns {THREE.Group}
+ * @returns {{ group: THREE.Group, edges: THREE.Mesh[] }}
  */
 export function createFloor() {
     const SIZE = 18;
@@ -11,6 +11,7 @@ export function createFloor() {
     const THK  = 0.15;  // grosor de las paredes del marco
 
     const group = new THREE.Group();
+    const edges = [];
 
     const matFloor = new THREE.MeshStandardMaterial({
         color: 0x1a2a30,
@@ -44,6 +45,7 @@ export function createFloor() {
     f.castShadow = true;
     f.receiveShadow = true;
     group.add(f);
+    edges.push(f);
 
     // Atrás   (z-)
     const b = new THREE.Mesh(new THREE.BoxGeometry(SIZE, edgeH, edgeW), matEdge);
@@ -51,6 +53,7 @@ export function createFloor() {
     b.castShadow = true;
     b.receiveShadow = true;
     group.add(b);
+    edges.push(b);
 
     // Izquierda (x-)
     const l = new THREE.Mesh(new THREE.BoxGeometry(edgeW, edgeH, SIZE), matEdge);
@@ -58,6 +61,7 @@ export function createFloor() {
     l.castShadow = true;
     l.receiveShadow = true;
     group.add(l);
+    edges.push(l);
 
     // Derecha  (x+)
     const r = new THREE.Mesh(new THREE.BoxGeometry(edgeW, edgeH, SIZE), matEdge);
@@ -65,6 +69,7 @@ export function createFloor() {
     r.castShadow = true;
     r.receiveShadow = true;
     group.add(r);
+    edges.push(r);
 
-    return group;
+    return { group, edges };
 }

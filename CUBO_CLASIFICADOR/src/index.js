@@ -8,6 +8,7 @@ import { createClassifier } from './objects/Classifier.js';
 import { createPieces }     from './objects/Pieces.js';
 import { createLights }     from './lights/Lights.js';
 import { setupCameraOrbit } from './controls/CameraOrbit.js';
+import { setupDragManager } from './controls/DragManager.js';
 import { setupResize }      from './utils/ResizeHandler.js';
 
 // ──────────────────────────────────────────────
@@ -28,13 +29,13 @@ const camera = createCamera();
 // ──────────────────────────────────────────────
 // 4. Suelo
 // ──────────────────────────────────────────────
-const floor = createFloor();
+const { group: floor, edges: floorEdges } = createFloor();
 scene.add(floor);
 
 // ──────────────────────────────────────────────
 // 5. Cubo clasificador con 6 huecos
 // ──────────────────────────────────────────────
-const { group: classifier } = createClassifier();
+const { group: classifier, walls, panel } = createClassifier();
 scene.add(classifier);
 
 // ──────────────────────────────────────────────
@@ -44,22 +45,31 @@ const pieces = createPieces();
 scene.add(pieces);
 
 // ──────────────────────────────────────────────
-// 7. Luces
+// 8. Luces
 // ──────────────────────────────────────────────
 createLights(scene);
 
 // ──────────────────────────────────────────────
-// 7. Controles de órbita (mouse)
+// 9. Controles de órbita (mouse)
 // ──────────────────────────────────────────────
 const controls = setupCameraOrbit(camera, renderer);
 
 // ──────────────────────────────────────────────
-// 8. Responsive
+// 10. Drag de piezas con colisiones
+// ──────────────────────────────────────────────
+setupDragManager(camera, renderer, {
+    piecesGroup: pieces,
+    classifierMeshes: [...walls, panel, ...floorEdges],
+    controls,
+});
+
+// ──────────────────────────────────────────────
+// 11. Responsive
 // ──────────────────────────────────────────────
 setupResize(camera, renderer);
 
 // ──────────────────────────────────────────────
-// 9. Bucle de renderizado con damping
+// 12. Bucle de renderizado con damping
 // ──────────────────────────────────────────────
 function animate() {
     requestAnimationFrame(animate);
