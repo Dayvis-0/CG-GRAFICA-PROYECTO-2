@@ -1,19 +1,16 @@
 import * as THREE from 'three';
 
-const STEP_SIZE = 0.04; // unidades por sub-paso (menor = más preciso contra tunneling)
+const STEP_SIZE = 0.04;
 
 /**
- * Configura arrastre con mouse para las piezas, con detección de colisiones
- * contra otras piezas y el cubo clasificador.
- *
- * @param {THREE.PerspectiveCamera}  camera
- * @param {THREE.WebGLRenderer}      renderer
- * @param {object}                   opts
- * @param {THREE.Group}              opts.piecesGroup       — grupo que contiene los 6 mesh de piezas
- * @param {THREE.Mesh[]}             opts.classifierMeshes  — todas las paredes + panel del clasificador
- * @param {OrbitControls}            opts.controls          — controles de órbita (se deshabilitan al arrastrar)
+ * @param {{ current: THREE.Camera }} activeCameraRef
+ * @param {THREE.WebGLRenderer}       renderer
+ * @param {object}                    opts
+ * @param {THREE.Group}               opts.piecesGroup
+ * @param {THREE.Mesh[]}              opts.classifierMeshes
+ * @param {function}                  opts.onSelect  — (mesh | null) => void
  */
-export function setupDragManager(camera, renderer, { piecesGroup, classifierMeshes, controls }) {
+export function setupDragManager(activeCameraRef, renderer, { piecesGroup, classifierMeshes, onSelect }) {
     const raycaster = new THREE.Raycaster();
     const pointer   = new THREE.Vector2();
     const dragPlane = new THREE.Plane();
@@ -28,28 +25,28 @@ export function setupDragManager(camera, renderer, { piecesGroup, classifierMesh
     let selected = null;
     let dragging = false;
 
-    // ── Obtener los mesh hijos del grupo de piezas ──
+    function notifySelect(mesh) {
+        if (onSelect) onSelect(mesh);
+    }
+
     function getPieceMeshes() {
         return piecesGroup.children.filter(c => c.isMesh);
     }
 
-    // ── Obtener todos los obstáculos (otras piezas + clasificador) ──
     function getObstacles(exclude) {
         const pieces = getPieceMeshes().filter(p => p !== exclude);
         return [...pieces, ...classifierMeshes];
     }
 
-    // ── Mover con sweep (sub-stepping) para evitar tunneling ──
     function sweepMove(mesh, targetPos) {
         const start = mesh.position.clone();
         delta.copy(targetPos).sub(start);
         const dist = delta.length();
 
-        if (dist < 0.001) return; // apenas se mueve, saltear
+        if (dist < 0.001) return;
 
         const steps = Math.max(1, Math.ceil(dist / STEP_SIZE));
         const stepDelta = delta.clone().divideScalar(steps);
-
         const obstacles = getObstacles(mesh);
 
         for (let i = 1; i <= steps; i++) {
@@ -62,14 +59,10 @@ export function setupDragManager(camera, renderer, { piecesGroup, classifierMesh
             for (const ob of obstacles) {
                 if (!ob.visible) continue;
                 boxB.setFromObject(ob);
-                if (boxA.intersectsBox(boxB)) {
-                    hit = true;
-                    break;
-                }
+                if (boxA.intersectsBox(boxB)) { hit = true; break; }
             }
 
             if (hit) {
-                // Restaurar a la última posición válida
                 const validPos = i > 1
                     ? start.clone().addScaledVector(stepDelta, i - 1)
                     : start;
@@ -79,29 +72,28 @@ export function setupDragManager(camera, renderer, { piecesGroup, classifierMesh
             }
         }
 
-        // Sin colisión — mover completo
         mesh.position.copy(targetPos);
         mesh.updateMatrixWorld(true);
     }
 
-    // ── Pointer down: seleccionar pieza ──
     function onPointerDown(e) {
         pointer.x =  (e.clientX / window.innerWidth)  * 2 - 1;
         pointer.y = -(e.clientY / window.innerHeight) * 2 + 1;
 
-        raycaster.setFromCamera(pointer, camera);
+        raycaster.setFromCamera(pointer, activeCameraRef.current);
         const hits = raycaster.intersectObjects(getPieceMeshes(), false);
 
-        if (hits.length === 0) return;
+        if (hits.length === 0) {
+            notifySelect(null);
+            return;
+        }
 
         selected = hits[0].object;
         dragging = true;
+        window.__draggingPiece = true;
+        notifySelect(selected);
 
-        // Deshabilitar orbit mientras se arrastra
-        if (controls) controls.enabled = false;
-
-        // Plano perpendicular a la cámara → arrastre libre en 3D
-        camera.getWorldDirection(camDir);
+        activeCameraRef.current.getWorldDirection(camDir);
         dragPlane.setFromNormalAndCoplanarPoint(camDir, selected.position);
         raycaster.ray.intersectPlane(dragPlane, target);
         offset.copy(target).sub(selected.position);
@@ -109,19 +101,17 @@ export function setupDragManager(camera, renderer, { piecesGroup, classifierMesh
         renderer.domElement.style.cursor = 'grabbing';
     }
 
-    // ── Pointer move: arrastrar con sweep ──
     function onPointerMove(e) {
         pointer.x =  (e.clientX / window.innerWidth)  * 2 - 1;
         pointer.y = -(e.clientY / window.innerHeight) * 2 + 1;
 
         if (!dragging || !selected) return;
 
-        raycaster.setFromCamera(pointer, camera);
+        raycaster.setFromCamera(pointer, activeCameraRef.current);
         raycaster.ray.intersectPlane(dragPlane, target);
 
         const newPos = target.clone().sub(offset);
 
-        // No atravesar el suelo (cada pieza tiene su altura mínima)
         if (selected.userData.minY !== undefined) {
             newPos.y = Math.max(selected.userData.minY, newPos.y);
         }
@@ -129,21 +119,30 @@ export function setupDragManager(camera, renderer, { piecesGroup, classifierMesh
         sweepMove(selected, newPos);
     }
 
-    // ── Pointer up: soltar ──
     function onPointerUp() {
         if (selected) selected = null;
         dragging = false;
-        if (controls) controls.enabled = true;
+        window.__draggingPiece = false;
         renderer.domElement.style.cursor = 'default';
     }
 
-    // ── Registrar eventos ──
     const el = renderer.domElement;
     el.addEventListener('pointerdown', onPointerDown);
     el.addEventListener('pointermove', onPointerMove);
     el.addEventListener('pointerup', onPointerUp);
 
     return {
+        getSelected: () => selected,
+        moveSelectedBy(dx, dz) {
+            if (!selected) return;
+            const pos = selected.position.clone();
+            pos.x += dx;
+            pos.z += dz;
+            if (selected.userData.minY !== undefined) {
+                pos.y = Math.max(selected.userData.minY, pos.y);
+            }
+            sweepMove(selected, pos);
+        },
         dispose() {
             el.removeEventListener('pointerdown', onPointerDown);
             el.removeEventListener('pointermove', onPointerMove);

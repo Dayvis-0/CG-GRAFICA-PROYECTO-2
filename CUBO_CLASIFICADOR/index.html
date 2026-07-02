@@ -19,11 +19,53 @@
 </head>
 <body>
 
-<!-- Indicador de etapa -->
-<div id="stage-badge">
+<!-- HUD -->
+<div id="hud">
   <h1>■ CUBO CLASIFICADOR</h1>
-  <span class="stage">Etapa 1 — Estructura base</span>
+  <div class="row">Objeto: <span class="status" id="hud-obj">—</span></div>
+  <div class="row">Material: <span class="status" id="hud-mat">Standard</span></div>
+  <div class="row">Textura: <span class="status" id="hud-tex">Ninguna</span></div>
+  <div class="row">Proyección: <span class="status" id="hud-proj">Perspectiva</span></div>
+  <div class="row">Wireframe: <span class="status" id="hud-wf">No</span></div>
 </div>
+
+<!-- Panel de control -->
+<div id="panel">
+  <h2>⚙ CONTROLES</h2>
+
+  <h3>Seleccionar pieza</h3>
+  <div id="obj-buttons"></div>
+
+  <h3>Material</h3>
+  <button class="matbtn" data-mat="lambert">Lambert (mate, sin brillo)</button>
+  <button class="matbtn" data-mat="phong">Phong (brillo especular)</button>
+  <button class="matbtn" data-mat="standard">Standard (PBR realista)</button>
+
+  <h3>Textura procedural</h3>
+  <div>
+    <span class="texbtn" data-tex="none">Ninguna</span>
+    <span class="texbtn" data-tex="stripes">Rayas</span>
+    <span class="texbtn" data-tex="dots">Lunares</span>
+    <span class="texbtn" data-tex="gradient">Degradado</span>
+    <span class="texbtn" data-tex="wood">Madera</span>
+  </div>
+
+  <h3>Wireframe</h3>
+  <div class="wfbtn" id="wf-btn">Wireframe: OFF</div>
+
+  <h3>Proyección de cámara</h3>
+  <div class="projrow">
+    <div class="projbtn active" id="proj-persp">Perspectiva</div>
+    <div class="projbtn" id="proj-ortho">Ortográfica</div>
+  </div>
+
+  <h3>Luces (3)</h3>
+  <div class="lightrow">Direccional <div class="lighttoggle on" data-light="dir"><div class="dot"></div></div></div>
+  <div class="lightrow">Relleno <div class="lighttoggle on" data-light="fill"><div class="dot"></div></div></div>
+  <div class="lightrow">Ambiental <div class="lighttoggle on" data-light="ambient"><div class="dot"></div></div></div>
+</div>
+
+<div id="hint">Click en pieza o botón para seleccionar · Arrastrar para mover · Flechas para mover fino · Arrastrar vacío para rotar · Rueda zoom</div>
 
 <!-- Entry point modular -->
 <script type="module" src="src/index.js"></script>

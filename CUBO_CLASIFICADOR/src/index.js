@@ -1,57 +1,101 @@
-import * as THREE from 'three';
+import { createScene }          from './core/SceneManager.js';
+import { createCameras }        from './core/CameraManager.js';
+import { createRenderer }       from './core/RendererManager.js';
+import { createFloor }          from './objects/Floor.js';
+import { createClassifier }     from './objects/Classifier.js';
+import { createPieces }         from './objects/Pieces.js';
+import { createLights }         from './lights/Lights.js';
+import { createTextures }       from './textures/TextureFactory.js';
+import { createMaterialFactory } from './materials/MaterialFactory.js';
+import { setupCameraOrbit }     from './controls/CameraOrbit.js';
+import { setupDragManager }     from './controls/DragManager.js';
+import { setupInterface }       from './ui/Interface.js';
+import { setupResize }          from './utils/ResizeHandler.js';
 
-import { createScene }      from './core/SceneManager.js';
-import { createCamera }     from './core/CameraManager.js';
-import { createRenderer }   from './core/RendererManager.js';
-import { createFloor }      from './objects/Floor.js';
-import { createClassifier } from './objects/Classifier.js';
-import { createPieces }     from './objects/Pieces.js';
-import { createLights }     from './lights/Lights.js';
-import { setupCameraOrbit } from './controls/CameraOrbit.js';
-import { setupDragManager } from './controls/DragManager.js';
-import { setupResize }      from './utils/ResizeHandler.js';
-
+// ──────────────────────────────────────────────
 // 1. Escena
+// ──────────────────────────────────────────────
 const scene = createScene();
 
+// ──────────────────────────────────────────────
 // 2. Renderer
+// ──────────────────────────────────────────────
 const renderer = createRenderer(document.body);
 
-// 3. Cámara
-const camera = createCamera();
+// ──────────────────────────────────────────────
+// 3. Cámaras (perspectiva + ortográfica)
+// ──────────────────────────────────────────────
+const cameras = createCameras();
+const activeCameraRef = { current: cameras.perspCam };
 
+// ──────────────────────────────────────────────
 // 4. Suelo
+// ──────────────────────────────────────────────
 const { group: floor, edges: floorEdges } = createFloor();
 scene.add(floor);
 
+// ──────────────────────────────────────────────
 // 5. Cubo clasificador con 6 huecos
+// ──────────────────────────────────────────────
 const { group: classifier, walls, panel } = createClassifier();
 scene.add(classifier);
 
+// ──────────────────────────────────────────────
 // 6. Piezas geométricas (alrededor del cubo)
+// ──────────────────────────────────────────────
 const pieces = createPieces();
 scene.add(pieces);
 
+// ──────────────────────────────────────────────
 // 7. Luces
-createLights(scene);
+// ──────────────────────────────────────────────
+const lights = createLights(scene);
 
-// 8. Controles de órbita (mouse)
-const controls = setupCameraOrbit(camera, renderer);
+// ──────────────────────────────────────────────
+// 8. Texturas procedurales + fábrica de materiales
+// ──────────────────────────────────────────────
+const textures = createTextures();
+const buildMaterial = createMaterialFactory(textures);
 
-// 9. Drag de piezas con colisiones
-setupDragManager(camera, renderer, {
+// ──────────────────────────────────────────────
+// 9. Controles de órbita (mouse) — ambos cámaras
+// ──────────────────────────────────────────────
+setupCameraOrbit(cameras, renderer);
+
+// ──────────────────────────────────────────────
+// 10. Drag de piezas con colisiones
+// ──────────────────────────────────────────────
+let interfaceCtrl;
+const dragManager = setupDragManager(activeCameraRef, renderer, {
     piecesGroup: pieces,
     classifierMeshes: [...walls, panel, ...floorEdges],
-    controls,
+    onSelect: (mesh) => {
+        if (interfaceCtrl) interfaceCtrl.onPieceSelected(mesh);
+    },
 });
 
-// 10. Responsive
-setupResize(camera, renderer);
+// ──────────────────────────────────────────────
+// 11. Interfaz de usuario (HUD + panel)
+// ──────────────────────────────────────────────
+interfaceCtrl = setupInterface({
+    piecesGroup: pieces,
+    buildMaterial,
+    activeCameraRef,
+    cameras,
+    lights,
+    dragManager,
+});
 
-// 11. Bucle de renderizado con damping
+// ──────────────────────────────────────────────
+// 12. Responsive
+// ──────────────────────────────────────────────
+setupResize(cameras, renderer, activeCameraRef);
+
+// ──────────────────────────────────────────────
+// 13. Bucle de renderizado
+// ──────────────────────────────────────────────
 function animate() {
     requestAnimationFrame(animate);
-    controls.update();
-    renderer.render(scene, camera);
+    renderer.render(scene, activeCameraRef.current);
 }
 animate();

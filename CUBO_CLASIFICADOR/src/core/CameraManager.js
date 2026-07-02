@@ -1,16 +1,21 @@
 import * as THREE from 'three';
 
 /**
- * Crea una cámara perspectiva situada frente al clasificador.
- * @returns {THREE.PerspectiveCamera}
+ * Crea cámaras perspectiva y ortográfica.
+ * @returns {{ perspCam: THREE.PerspectiveCamera, orthoCam: THREE.OrthographicCamera }}
  */
-export function createCamera() {
+export function createCameras() {
     const W = window.innerWidth;
     const H = window.innerHeight;
+    const ASP = W / H;
 
-    const camera = new THREE.PerspectiveCamera(45, W / H, 0.1, 100);
-    camera.position.set(6, 5, 8);
-    camera.lookAt(0, 1.5, 0);
+    const perspCam = new THREE.PerspectiveCamera(45, ASP, 0.1, 100);
+    perspCam.position.set(6, 5, 8);
 
-    return camera;
+    const orthoCam = new THREE.OrthographicCamera(
+        -7 * ASP, 7 * ASP, 7, -7, 0.1, 100
+    );
+    orthoCam.position.set(6, 5, 8);
+
+    return { perspCam, orthoCam };
 }
