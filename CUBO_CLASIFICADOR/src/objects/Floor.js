@@ -16,9 +16,6 @@ export function createFloor() {
         color: 0x1a2a30,
         roughness: 0.85,
         metalness: 0.05,
-        transparent: true,
-        opacity: 0.9,
-        side: THREE.DoubleSide,
     });
 
     const matEdge = new THREE.MeshStandardMaterial({

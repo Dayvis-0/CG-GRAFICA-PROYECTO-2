@@ -5,6 +5,7 @@ import { createCamera }     from './core/CameraManager.js';
 import { createRenderer }   from './core/RendererManager.js';
 import { createFloor }      from './objects/Floor.js';
 import { createClassifier } from './objects/Classifier.js';
+import { createPieces }     from './objects/Pieces.js';
 import { createLights }     from './lights/Lights.js';
 import { setupCameraOrbit } from './controls/CameraOrbit.js';
 import { setupResize }      from './utils/ResizeHandler.js';
@@ -37,7 +38,13 @@ const { group: classifier } = createClassifier();
 scene.add(classifier);
 
 // ──────────────────────────────────────────────
-// 6. Luces
+// 6. Piezas geométricas (alrededor del cubo)
+// ──────────────────────────────────────────────
+const pieces = createPieces();
+scene.add(pieces);
+
+// ──────────────────────────────────────────────
+// 7. Luces
 // ──────────────────────────────────────────────
 createLights(scene);
 
