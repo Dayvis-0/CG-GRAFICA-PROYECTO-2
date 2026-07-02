@@ -18,12 +18,7 @@ export function createFloor() {
         roughness: 0.85,
         metalness: 0.05,
     });
-
-    const matEdge = new THREE.MeshStandardMaterial({
-        color: 0x1a2a30,
-        roughness: 0.85,
-        metalness: 0.05,
-    });
+    // matEdge eliminado — usa el mismo material que el plano
 
     // ── Plano base ──
     const plane = new THREE.Mesh(
@@ -40,7 +35,7 @@ export function createFloor() {
     const edgeW = THK;         // grosor
 
     // Frente  (z+)
-    const f = new THREE.Mesh(new THREE.BoxGeometry(SIZE, edgeH, edgeW), matEdge);
+    const f = new THREE.Mesh(new THREE.BoxGeometry(SIZE, edgeH, edgeW), matFloor);
     f.position.set(0, LIFT / 2, HALF - edgeW / 2);
     f.castShadow = true;
     f.receiveShadow = true;
@@ -48,7 +43,7 @@ export function createFloor() {
     edges.push(f);
 
     // Atrás   (z-)
-    const b = new THREE.Mesh(new THREE.BoxGeometry(SIZE, edgeH, edgeW), matEdge);
+    const b = new THREE.Mesh(new THREE.BoxGeometry(SIZE, edgeH, edgeW), matFloor);
     b.position.set(0, LIFT / 2, -(HALF - edgeW / 2));
     b.castShadow = true;
     b.receiveShadow = true;
@@ -56,7 +51,7 @@ export function createFloor() {
     edges.push(b);
 
     // Izquierda (x-)
-    const l = new THREE.Mesh(new THREE.BoxGeometry(edgeW, edgeH, SIZE), matEdge);
+    const l = new THREE.Mesh(new THREE.BoxGeometry(edgeW, edgeH, SIZE), matFloor);
     l.position.set(-(HALF - edgeW / 2), LIFT / 2, 0);
     l.castShadow = true;
     l.receiveShadow = true;
@@ -64,7 +59,7 @@ export function createFloor() {
     edges.push(l);
 
     // Derecha  (x+)
-    const r = new THREE.Mesh(new THREE.BoxGeometry(edgeW, edgeH, SIZE), matEdge);
+    const r = new THREE.Mesh(new THREE.BoxGeometry(edgeW, edgeH, SIZE), matFloor);
     r.position.set(HALF - edgeW / 2, LIFT / 2, 0);
     r.castShadow = true;
     r.receiveShadow = true;

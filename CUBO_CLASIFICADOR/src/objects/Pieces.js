@@ -1,65 +1,41 @@
 import * as THREE from 'three';
+import { HOLE_CONFIGS } from '../data/holeConfigs.js';
+
+// ── Fábrica de geometrías según el tipo de pieza ──
+const GEO_BUILDERS = {
+    sphere:   (args) => new THREE.SphereGeometry(...args),
+    box:      (args) => new THREE.BoxGeometry(...args),
+    cone:     (args) => new THREE.ConeGeometry(...args),
+    cylinder: (args) => new THREE.CylinderGeometry(...args),
+};
 
 /**
  * Crea las 6 piezas geométricas que encajan en los huecos del clasificador.
- * Cada pieza se coloca sobre el suelo, alrededor del cubo.
+ * Los tamaños se definen en data/holeConfigs.js (fuente única).
  * @returns {THREE.Group}
  */
 export function createPieces() {
     const group = new THREE.Group();
-
-    // ── Configuración de cada pieza ──
-    const pieces = [
-        {
-            label: 'Esfera',
-            geo: new THREE.SphereGeometry(0.55, 32, 32),
-            color: 0xff5566,
-            pos: { x: 4.5, z: 0, y: 0.55 },
-        },
-        {
-            label: 'Cubo',
-            geo: new THREE.BoxGeometry(0.9, 0.9, 0.9),
-            color: 0x5588ff,
-            pos: { x: 2.25, z: 3.9, y: 0.45 },
-        },
-        {
-            label: 'Cono',
-            geo: new THREE.ConeGeometry(0.65, 1.1, 32),
-            color: 0x44dd88,
-            pos: { x: -2.25, z: 3.9, y: 0.55 },
-        },
-        {
-            label: 'Cilindro',
-            geo: new THREE.CylinderGeometry(0.5, 0.5, 0.9, 32),
-            color: 0xffbb44,
-            pos: { x: -4.5, z: 0, y: 0.45 },
-        },
-        {
-            label: 'Pirámide',
-            geo: new THREE.ConeGeometry(0.6, 1.0, 4),
-            color: 0xdd66ff,
-            pos: { x: -2.25, z: -3.9, y: 0.5 },
-        },
-        {
-            label: 'Prisma',
-            geo: new THREE.BoxGeometry(0.9, 0.6, 0.85),
-            color: 0x44ddff,
-            pos: { x: 2.25, z: -3.9, y: 0.3 },
-        },
-    ];
 
     const mat = new THREE.MeshStandardMaterial({
         roughness: 0.4,
         metalness: 0.3,
     });
 
-    for (const p of pieces) {
-        const mesh = new THREE.Mesh(p.geo, mat.clone());
-        mesh.material.color.setHex(p.color);
-        mesh.position.set(p.pos.x, p.pos.y, p.pos.z);
+    for (const cfg of HOLE_CONFIGS) {
+        const builder = GEO_BUILDERS[cfg.pieceType];
+        if (!builder) {
+            console.warn(`Unknown piece type: ${cfg.pieceType}`);
+            continue;
+        }
+
+        const mesh = new THREE.Mesh(builder(cfg.pieceArgs), mat.clone());
+        mesh.material.color.setHex(cfg.pieceColor);
+        mesh.position.set(cfg.piecePos.x, cfg.pieceY, cfg.piecePos.z);
         mesh.castShadow = true;
         mesh.receiveShadow = true;
-        mesh.userData.label = p.label;
+        mesh.userData.label = cfg.label;
+        mesh.userData.minY = cfg.pieceY;
         group.add(mesh);
     }
 

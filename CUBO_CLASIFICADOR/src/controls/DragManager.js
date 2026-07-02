@@ -17,6 +17,7 @@ export function setupDragManager(camera, renderer, { piecesGroup, classifierMesh
     const raycaster = new THREE.Raycaster();
     const pointer   = new THREE.Vector2();
     const dragPlane = new THREE.Plane();
+    const camDir    = new THREE.Vector3();
     const target    = new THREE.Vector3();
     const offset    = new THREE.Vector3();
     const boxA      = new THREE.Box3();
@@ -99,8 +100,9 @@ export function setupDragManager(camera, renderer, { piecesGroup, classifierMesh
         // Deshabilitar orbit mientras se arrastra
         if (controls) controls.enabled = false;
 
-        // Plano horizontal a la altura de la pieza
-        dragPlane.set(new THREE.Vector3(0, 1, 0), -selected.position.y);
+        // Plano perpendicular a la cámara → arrastre libre en 3D
+        camera.getWorldDirection(camDir);
+        dragPlane.setFromNormalAndCoplanarPoint(camDir, selected.position);
         raycaster.ray.intersectPlane(dragPlane, target);
         offset.copy(target).sub(selected.position);
 
@@ -115,15 +117,14 @@ export function setupDragManager(camera, renderer, { piecesGroup, classifierMesh
         if (!dragging || !selected) return;
 
         raycaster.setFromCamera(pointer, camera);
-        dragPlane.set(new THREE.Vector3(0, 1, 0), -selected.position.y);
         raycaster.ray.intersectPlane(dragPlane, target);
 
         const newPos = target.clone().sub(offset);
 
-        // Restringir dentro del suelo (evitar que se pierdan)
-        const limit = 8.5;
-        newPos.x = Math.max(-limit, Math.min(limit, newPos.x));
-        newPos.z = Math.max(-limit, Math.min(limit, newPos.z));
+        // No atravesar el suelo (cada pieza tiene su altura mínima)
+        if (selected.userData.minY !== undefined) {
+            newPos.y = Math.max(selected.userData.minY, newPos.y);
+        }
 
         sweepMove(selected, newPos);
     }
