@@ -69,6 +69,7 @@ let interfaceCtrl;
 const dragManager = setupDragManager(activeCameraRef, renderer, {
     piecesGroup: pieces,
     classifierMeshes: [...walls, panel, ...floorEdges],
+    panelMesh: panel,
     onSelect: (mesh) => {
         if (interfaceCtrl) interfaceCtrl.onPieceSelected(mesh);
     },
@@ -92,30 +93,36 @@ interfaceCtrl = setupInterface({
 setupResize(cameras, renderer, activeCameraRef);
 
 // ──────────────────────────────────────────────
-// 13. Bucle de renderizado con gravedad
+// 13. Bucle de renderizado con físicas
 // ──────────────────────────────────────────────
-const GRAVITY = 0.008;
-
 function animate() {
     requestAnimationFrame(animate);
 
-    // Gravedad: las piezas elevadas caen hasta su minY
-    // Solo si se está arrastrando activamente, saltamos esa pieza
     const draggedMesh = window.__draggingPiece ? dragManager.getSelected() : null;
+
     for (const child of pieces.children) {
         if (!child.isMesh) continue;
+
+        // La pieza que se arrastra no recibe físicas
         if (child === draggedMesh) {
-            child.userData.velY = 0; // se está arrastrando → sin gravedad
+            child.userData.velY = 0;
+            child.userData.unstable = false;
             continue;
         }
-        const minY = child.userData.minY;
-        if (child.position.y > minY) {
-            child.userData.velY += GRAVITY;
-            child.position.y -= child.userData.velY;
-            if (child.position.y <= minY) {
-                child.position.y = minY;
-                child.userData.velY = 0;
-            }
+
+        // Física: gravedad + estabilidad + empuje
+        dragManager.applyPhysics(child);
+
+        // Rotación de la esfera (rodar)
+        if (child.userData.label === 'Esfera') {
+            const prevX = child.userData.prevX ?? child.position.x;
+            const prevZ = child.userData.prevZ ?? child.position.z;
+            const dx = child.position.x - prevX;
+            const dz = child.position.z - prevZ;
+            child.rotation.x -= dz * 3;
+            child.rotation.z += dx * 3;
+            child.userData.prevX = child.position.x;
+            child.userData.prevZ = child.position.z;
         }
     }
 

@@ -1,6 +1,10 @@
 import * as THREE from 'three';
+import { HOLE_CONFIGS } from '../data/holeConfigs.js';
 
 const STEP_SIZE = 0.04;
+const PUSH_SPEED = 0.025;
+const GRAVITY_ACCEL = 0.008;
+const PANEL_Y = 2.5; // WALL_HEIGHT desde Classifier.js
 
 /**
  * @param {{ current: THREE.Camera }} activeCameraRef
@@ -8,9 +12,10 @@ const STEP_SIZE = 0.04;
  * @param {object}                    opts
  * @param {THREE.Group}               opts.piecesGroup
  * @param {THREE.Mesh[]}              opts.classifierMeshes
+ * @param {THREE.Mesh}                opts.panelMesh
  * @param {function}                  opts.onSelect  — (mesh | null) => void
  */
-export function setupDragManager(activeCameraRef, renderer, { piecesGroup, classifierMeshes, onSelect }) {
+export function setupDragManager(activeCameraRef, renderer, { piecesGroup, classifierMeshes, panelMesh, onSelect }) {
     const raycaster = new THREE.Raycaster();
     const pointer   = new THREE.Vector2();
     const dragPlane = new THREE.Plane();
@@ -20,6 +25,12 @@ export function setupDragManager(activeCameraRef, renderer, { piecesGroup, class
     const boxA      = new THREE.Box3();
     const boxB      = new THREE.Box3();
     const delta     = new THREE.Vector3();
+
+    // Reusables para físicas
+    const _stabilityRay = new THREE.Raycaster();
+    const _stabilityBox = new THREE.Box3();
+    const _corner = new THREE.Vector3();
+    const _stabilityDir = new THREE.Vector3(0, -1, 0);
 
     /** @type {THREE.Mesh | null} */
     let selected = null;
@@ -58,6 +69,8 @@ export function setupDragManager(activeCameraRef, renderer, { piecesGroup, class
             let hit = false;
             for (const ob of obstacles) {
                 if (!ob.visible) continue;
+                // Si la pieza está sobre su hueco, el panel no bloquea
+                if (ob === panelMesh && isOverMatchingHole(mesh)) continue;
                 boxB.setFromObject(ob);
                 if (boxA.intersectsBox(boxB)) { hit = true; break; }
             }
@@ -74,6 +87,161 @@ export function setupDragManager(activeCameraRef, renderer, { piecesGroup, class
 
         mesh.position.copy(targetPos);
         mesh.updateMatrixWorld(true);
+    }
+
+    // ─── Detección de pieza sobre su hueco correspondiente ───
+    function pointInTriangle(px, py, ax, ay, bx, by, cx, cy) {
+        const d = (by - cy) * (ax - cx) + (cx - bx) * (ay - cy);
+        const a = ((by - cy) * (px - cx) + (cx - bx) * (py - cy)) / d;
+        const b = ((cy - ay) * (px - cx) + (ax - cx) * (py - cy)) / d;
+        const c = 1 - a - b;
+        return a >= -0.01 && b >= -0.01 && c >= -0.01;
+    }
+
+    function isOverMatchingHole(mesh) {
+        if (!panelMesh || !mesh || mesh.position.y < PANEL_Y - 1.0) return false;
+        const cfg = HOLE_CONFIGS.find(c => c.label === mesh.userData.label);
+        if (!cfg) return false;
+
+        // Convertir posición mundial a coordenadas del Shape (shape_Y → -world_Z)
+        const sx = mesh.position.x;
+        const sy = -mesh.position.z;
+
+        switch (cfg.shape) {
+            case 'circle': {
+                const dx = sx - cfg.cx, dy = sy - cfg.cy;
+                return (dx * dx + dy * dy) < cfg.hole.r * cfg.hole.r;
+            }
+            case 'square': {
+                const h = cfg.hole.side / 2;
+                return Math.abs(sx - cfg.cx) < h && Math.abs(sy - cfg.cy) < h;
+            }
+            case 'triangle': {
+                const r = cfg.hole.r, s32 = 0.86602540378;
+                const ax = cfg.cx, ay = cfg.cy + r;
+                const bx = cfg.cx + r * s32, by = cfg.cy - r / 2;
+                const cx2 = cfg.cx - r * s32, cy2 = cfg.cy - r / 2;
+                return pointInTriangle(sx, sy, ax, ay, bx, by, cx2, cy2);
+            }
+            case 'diamond':
+                return Math.abs(sx - cfg.cx) / cfg.hole.rx
+                     + Math.abs(sy - cfg.cy) / cfg.hole.ry < 1;
+            case 'rect': {
+                return Math.abs(sx - cfg.cx) < cfg.hole.w / 2
+                    && Math.abs(sy - cfg.cy) < cfg.hole.h / 2;
+            }
+        }
+        return false;
+    }
+
+    // ─── Estabilidad ───
+    function isStable(mesh) {
+        if (!mesh) return true;
+        const obstacles = getObstacles(mesh);
+        if (obstacles.length === 0) return true;
+
+        _stabilityBox.setFromObject(mesh);
+        const mn = _stabilityBox.min;
+        const mx = _stabilityBox.max;
+
+        const corners = [
+            [mn.x, mn.z], [mx.x, mn.z],
+            [mn.x, mx.z], [mx.x, mx.z],
+        ];
+
+        let supported = 0;
+        for (const [cx, cz] of corners) {
+            _corner.set(cx, mn.y + 0.15, cz);
+            _stabilityRay.set(_corner, _stabilityDir);
+            _stabilityRay.far = 0.35;
+            const hits = _stabilityRay.intersectObjects(obstacles, false);
+            if (hits.length > 0 && hits[0].distance > 0.01) supported++;
+        }
+        return supported >= 3;
+    }
+
+    // ─── Dirección de empuje para piezas inestables ───
+    function computePushDirection(mesh) {
+        const obstacles = getObstacles(mesh);
+        _stabilityBox.setFromObject(mesh);
+        const mn = _stabilityBox.min;
+        const mx = _stabilityBox.max;
+        const cx = (mn.x + mx.x) / 2;
+        const cz = (mn.z + mx.z) / 2;
+
+        const corners = [
+            { x: mn.x, z: mn.z }, { x: mx.x, z: mn.z },
+            { x: mn.x, z: mx.z }, { x: mx.x, z: mx.z },
+        ];
+
+        let pushX = 0, pushZ = 0, count = 0;
+        for (const c of corners) {
+            _corner.set(c.x, mn.y + 0.15, c.z);
+            _stabilityRay.set(_corner, _stabilityDir);
+            _stabilityRay.far = 0.35;
+            const hits = _stabilityRay.intersectObjects(obstacles, false);
+            if (hits.length === 0 || hits[0].distance <= 0.01) {
+                pushX += c.x - cx;
+                pushZ += c.z - cz;
+                count++;
+            }
+        }
+
+        if (count > 0 && count < 3) {
+            const len = Math.sqrt(pushX * pushX + pushZ * pushZ);
+            if (len > 0.001) {
+                mesh.userData.pushX = pushX / len;
+                mesh.userData.pushZ = pushZ / len;
+                mesh.userData.unstable = true;
+            }
+        }
+    }
+
+    // ─── Física completa: gravedad + empuje + estabilidad ───
+    function applyPhysics(mesh) {
+        const minY = mesh.userData.minY;
+        if (!mesh.userData.unstable && mesh.position.y <= minY) return;
+
+        // Aceleración por gravedad
+        if (!mesh.userData.unstable) {
+            mesh.userData.velY = (mesh.userData.velY || 0) + GRAVITY_ACCEL;
+        }
+
+        const targetPos = mesh.position.clone();
+
+        // Caída vertical
+        targetPos.y -= mesh.userData.velY || 0;
+
+        // Empuje horizontal si inestable
+        if (mesh.userData.unstable) {
+            targetPos.x += (mesh.userData.pushX || 0) * PUSH_SPEED;
+            targetPos.z += (mesh.userData.pushZ || 0) * PUSH_SPEED;
+        }
+
+        sweepMove(mesh, targetPos);
+
+        // Si estaba inestable y ahora se detuvo, re-evaluar
+        if (mesh.userData.unstable) {
+            const stopped = mesh.position.distanceTo(targetPos) < 0.001
+                || mesh.position.y <= minY + 0.01;
+            if (stopped) {
+                if (isStable(mesh) || mesh.position.y <= minY + 0.01) {
+                    mesh.userData.unstable = false;
+                    mesh.userData.pushX = 0;
+                    mesh.userData.pushZ = 0;
+                    if (mesh.position.y <= minY) mesh.userData.velY = 0;
+                }
+            }
+            return;
+        }
+
+        // Recién asentado → verificar estabilidad
+        if (mesh.position.y <= minY + 0.01) {
+            mesh.userData.velY = 0;
+            if (!isStable(mesh)) {
+                computePushDirection(mesh);
+            }
+        }
     }
 
     function onPointerDown(e) {
@@ -93,7 +261,12 @@ export function setupDragManager(activeCameraRef, renderer, { piecesGroup, class
         window.__draggingPiece = true;
         notifySelect(selected);
 
-        // Capturar el pointer para no perder eventos aunque salga del canvas
+        // Al agarrar, limpia estado inestable
+        selected.userData.unstable = false;
+        selected.userData.pushX = 0;
+        selected.userData.pushZ = 0;
+        selected.userData.velY = 0;
+
         renderer.domElement.setPointerCapture(e.pointerId);
 
         activeCameraRef.current.getWorldDirection(camDir);
@@ -136,6 +309,7 @@ export function setupDragManager(activeCameraRef, renderer, { piecesGroup, class
 
     return {
         getSelected: () => selected,
+        applyPhysics,
         moveSelectedBy(dx, dz) {
             if (!selected) return;
             const pos = selected.position.clone();
