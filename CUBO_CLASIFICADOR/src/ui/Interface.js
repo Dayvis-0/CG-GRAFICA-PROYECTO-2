@@ -1,13 +1,10 @@
-import * as THREE from 'three';
-
 /**
  * Configura el HUD y panel de control del Cubo Clasificador.
+ * (Modo FPS: solo cámara perspectiva, proyección fija)
  */
 export function setupInterface({
     piecesGroup,
     buildMaterial,
-    activeCameraRef,
-    cameras,
     lights,
     dragManager,
 }) {
@@ -149,20 +146,9 @@ export function setupInterface({
         rebuildMaterial();
     };
 
-    // ─── PANEL: Proyección ──────────────────────
-    document.getElementById('proj-persp').onclick = () => {
-        activeCameraRef.current = cameras.perspCam;
-        document.getElementById('proj-persp').classList.add('active');
-        document.getElementById('proj-ortho').classList.remove('active');
-        document.getElementById('hud-proj').textContent = 'Perspectiva';
-    };
-
-    document.getElementById('proj-ortho').onclick = () => {
-        activeCameraRef.current = cameras.orthoCam;
-        document.getElementById('proj-ortho').classList.add('active');
-        document.getElementById('proj-persp').classList.remove('active');
-        document.getElementById('hud-proj').textContent = 'Ortográfica';
-    };
+    // ─── PANEL: Proyección (FPS fijo) ───────────
+    document.getElementById('hud-proj').textContent = 'Perspectiva (FPS)';
+    document.getElementById('proj-ortho').style.display = 'none';
 
     // ─── PANEL: Luces ───────────────────────────
     document.querySelectorAll('.lighttoggle').forEach(tg => {

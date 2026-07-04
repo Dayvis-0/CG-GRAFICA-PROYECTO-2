@@ -1,21 +1,16 @@
 import * as THREE from 'three';
 
 /**
- * Crea cámaras perspectiva y ortográfica.
- * @returns {{ perspCam: THREE.PerspectiveCamera, orthoCam: THREE.OrthographicCamera }}
+ * Crea la cámara en perspectiva para navegación FPS dentro del cuarto.
+ * La cámara se posiciona a altura de ojos (1.6) al inicializar.
+ *
+ * @returns {{ cam: THREE.PerspectiveCamera }}
  */
-export function createCameras() {
-    const W = window.innerWidth;
-    const H = window.innerHeight;
-    const ASP = W / H;
+export function createCamera() {
+    const ASP = window.innerWidth / window.innerHeight;
 
-    const perspCam = new THREE.PerspectiveCamera(45, ASP, 0.1, 100);
-    perspCam.position.set(6, 5, 8);
+    const cam = new THREE.PerspectiveCamera(70, ASP, 0.1, 100);
+    cam.position.set(0, 1.6, 0);
 
-    const orthoCam = new THREE.OrthographicCamera(
-        -7 * ASP, 7 * ASP, 7, -7, 0.1, 100
-    );
-    orthoCam.position.set(6, 5, 8);
-
-    return { perspCam, orthoCam };
+    return { cam };
 }

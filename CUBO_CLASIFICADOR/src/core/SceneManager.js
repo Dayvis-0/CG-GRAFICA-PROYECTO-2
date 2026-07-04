@@ -6,6 +6,6 @@ import * as THREE from 'three';
  */
 export function createScene() {
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x0e0e18);
+    scene.background = new THREE.Color(0x141416);
     return scene;
 }
