@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { HOLE_CONFIGS } from '../data/holeConfigs.js';
+import { computeStarPoints } from '../utils/geometry.js';
 
 // ── Fábrica de geometrías según el tipo de pieza ──
 const GEO_BUILDERS = {
@@ -7,6 +8,19 @@ const GEO_BUILDERS = {
     box:      (args) => new THREE.BoxGeometry(...args),
     cone:     (args) => new THREE.ConeGeometry(...args),
     cylinder: (args) => new THREE.CylinderGeometry(...args),
+    star: ([outerR, innerR, depth, points = 4]) => {
+        const verts = computeStarPoints(outerR, innerR, points);
+        const shape = new THREE.Shape();
+        verts.forEach((v, i) => {
+            if (i === 0) shape.moveTo(v.x, v.y);
+            else shape.lineTo(v.x, v.y);
+        });
+        shape.closePath();
+        const geo = new THREE.ExtrudeGeometry(shape, { depth, bevelEnabled: false });
+        geo.translate(0, 0, -depth / 2);
+        geo.rotateX(-Math.PI / 2);
+        return geo;
+    },
 };
 
 /**

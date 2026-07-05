@@ -1,10 +1,11 @@
 import * as THREE from 'three';
 import { HOLE_CONFIGS } from '../data/holeConfigs.js';
+import { WALL_HEIGHT } from '../objects/Classifier.js';
+import { isInsideHole } from '../utils/HoleDetector.js';
 
 const STEP_SIZE = 0.04;
 const PUSH_SPEED = 0.025;
 const GRAVITY_ACCEL = 0.008;
-const PANEL_Y = 2.5; // WALL_HEIGHT desde Classifier.js
 
 /**
  * @param {{ current: THREE.Camera }} activeCameraRef
@@ -13,9 +14,11 @@ const PANEL_Y = 2.5; // WALL_HEIGHT desde Classifier.js
  * @param {THREE.Group}               opts.piecesGroup
  * @param {THREE.Mesh[]}              opts.classifierMeshes
  * @param {THREE.Mesh}                opts.panelMesh
- * @param {function}                  opts.onSelect  — (mesh | null) => void
+ * @param {function}                  opts.onSelect     — (mesh | null) => void
+ * @param {function}                  opts.onDragStart  — () => void
+ * @param {function}                  opts.onDragEnd    — () => void
  */
-export function setupDragManager(activeCameraRef, renderer, { piecesGroup, classifierMeshes, panelMesh, onSelect }) {
+export function setupDragManager(activeCameraRef, renderer, { piecesGroup, classifierMeshes, panelMesh, onSelect, onDragStart, onDragEnd }) {
     const raycaster = new THREE.Raycaster();
     const pointer   = new THREE.Vector2();
     const dragPlane = new THREE.Plane();
@@ -90,16 +93,12 @@ export function setupDragManager(activeCameraRef, renderer, { piecesGroup, class
     }
 
     // ─── Detección de pieza sobre su hueco correspondiente ───
-    function pointInTriangle(px, py, ax, ay, bx, by, cx, cy) {
-        const d = (by - cy) * (ax - cx) + (cx - bx) * (ay - cy);
-        const a = ((by - cy) * (px - cx) + (cx - bx) * (py - cy)) / d;
-        const b = ((cy - ay) * (px - cx) + (ax - cx) * (py - cy)) / d;
-        const c = 1 - a - b;
-        return a >= -0.01 && b >= -0.01 && c >= -0.01;
-    }
+    // La lógica de point-in-hole vive en utils/HoleDetector.js
 
+    // Cada pieza solo puede pasar por el hueco que coincide con su label
+    // (cubo clasificador tradicional — cada figura tiene su entrada única).
     function isOverMatchingHole(mesh) {
-        if (!panelMesh || !mesh || mesh.position.y < PANEL_Y - 1.0) return false;
+        if (!panelMesh || !mesh || mesh.position.y < WALL_HEIGHT - 1.0) return false;
         const cfg = HOLE_CONFIGS.find(c => c.label === mesh.userData.label);
         if (!cfg) return false;
 
@@ -107,31 +106,7 @@ export function setupDragManager(activeCameraRef, renderer, { piecesGroup, class
         const sx = mesh.position.x;
         const sy = -mesh.position.z;
 
-        switch (cfg.shape) {
-            case 'circle': {
-                const dx = sx - cfg.cx, dy = sy - cfg.cy;
-                return (dx * dx + dy * dy) < cfg.hole.r * cfg.hole.r;
-            }
-            case 'square': {
-                const h = cfg.hole.side / 2;
-                return Math.abs(sx - cfg.cx) < h && Math.abs(sy - cfg.cy) < h;
-            }
-            case 'triangle': {
-                const r = cfg.hole.r, s32 = 0.86602540378;
-                const ax = cfg.cx, ay = cfg.cy + r;
-                const bx = cfg.cx + r * s32, by = cfg.cy - r / 2;
-                const cx2 = cfg.cx - r * s32, cy2 = cfg.cy - r / 2;
-                return pointInTriangle(sx, sy, ax, ay, bx, by, cx2, cy2);
-            }
-            case 'diamond':
-                return Math.abs(sx - cfg.cx) / cfg.hole.rx
-                     + Math.abs(sy - cfg.cy) / cfg.hole.ry < 1;
-            case 'rect': {
-                return Math.abs(sx - cfg.cx) < cfg.hole.w / 2
-                    && Math.abs(sy - cfg.cy) < cfg.hole.h / 2;
-            }
-        }
-        return false;
+        return isInsideHole(sx, sy, cfg);
     }
 
     // ─── Estabilidad ───
@@ -258,7 +233,7 @@ export function setupDragManager(activeCameraRef, renderer, { piecesGroup, class
 
         selected = hits[0].object;
         dragging = true;
-        window.__draggingPiece = true;
+        if (onDragStart) onDragStart();
         notifySelect(selected);
 
         // Al agarrar, limpia estado inestable
@@ -298,7 +273,7 @@ export function setupDragManager(activeCameraRef, renderer, { piecesGroup, class
     function onPointerUp() {
         if (selected) selected = null;
         dragging = false;
-        window.__draggingPiece = false;
+        if (onDragEnd) onDragEnd();
         renderer.domElement.style.cursor = 'default';
     }
 

@@ -1,4 +1,5 @@
 import { Path } from 'three';
+import { computeStarPoints } from './geometry.js';
 
 /**
  * Crea un hueco circular (para Esfera y Cilindro).
@@ -51,6 +52,36 @@ export function diamondHole(cx, cy, rx, ry) {
     path.lineTo(cx + rx,  cy);
     path.lineTo(cx,       cy - ry);
     path.lineTo(cx - rx,  cy);
+    return path;
+}
+
+/**
+ * Crea un hueco en forma de estrella de N puntas.
+ */
+export function starHole(cx, cy, outerR, innerR, points = 4) {
+    const verts = computeStarPoints(outerR, innerR, points);
+    const path = new Path();
+    verts.forEach((v, i) => {
+        const x = cx + v.x, y = cy + v.y;
+        if (i === 0) path.moveTo(x, y);
+        else path.lineTo(x, y);
+    });
+    path.closePath();
+    return path;
+}
+
+/**
+ * Crea un hueco hexagonal (para Prisma hexagonal).
+ */
+export function hexagonHole(cx, cy, r) {
+    const path = new Path();
+    for (let i = 0; i < 6; i++) {
+        const angle = (i / 6) * Math.PI * 2 - Math.PI / 2;
+        const x = cx + r * Math.cos(angle);
+        const y = cy + r * Math.sin(angle);
+        if (i === 0) path.moveTo(x, y);
+        else path.lineTo(x, y);
+    }
     return path;
 }
 

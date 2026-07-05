@@ -9,8 +9,10 @@ import * as THREE from 'three';
  * @param {THREE.PerspectiveCamera} camera
  * @param {THREE.WebGLRenderer} renderer
  * @param {object} roomBounds - { half: number, height: number, margin: number }
+ * @param {THREE.Mesh[]} obstacles
+ * @param {{ current: boolean }} draggingRef - ref compartida con DragManager
  */
-export function setupCameraFPS(camera, renderer, roomBounds, obstacles = []) {
+export function setupCameraFPS(camera, renderer, roomBounds, obstacles = [], draggingRef = { current: false }) {
     const { half, height, margin } = roomBounds;
     const limit = half - margin;
     const yMin = margin;
@@ -36,18 +38,18 @@ export function setupCameraFPS(camera, renderer, roomBounds, obstacles = []) {
 
     // Click en canvas → activar pointer lock (si no está bloqueado)
     el.addEventListener('click', () => {
-        if (!isLocked && !window.__draggingPiece) {
+        if (!isLocked && !draggingRef.current) {
             el.requestPointerLock();
         }
     });
 
     // Mouse move → cámara (solo si pointer lock activo y no arrastrando pieza)
     document.addEventListener('mousemove', (e) => {
-        if (!isLocked || window.__draggingPiece) return;
+        if (!isLocked || draggingRef.current) return;
 
         // Con pointer lock, movementX/movementY dan el delta exacto del mouse
         yaw -= e.movementX * 0.003;
-        pitch += e.movementY * 0.003;
+        pitch -= e.movementY * 0.003;
 
         // Clamp pitch para no voltear la cámara
         const maxPitch = Math.PI / 2 - 0.05;

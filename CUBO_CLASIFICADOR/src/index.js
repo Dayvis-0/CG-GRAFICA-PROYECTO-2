@@ -11,6 +11,7 @@ import { setupCameraFPS }       from './controls/CameraFPS.js';
 import { setupDragManager }     from './controls/DragManager.js';
 import { setupInterface }       from './ui/Interface.js';
 import { setupResize }          from './utils/ResizeHandler.js';
+import { setupAnimationLoop }   from './animations/AnimationLoop.js';
 
 // 1. Escena
 const scene = createScene();
@@ -41,11 +42,15 @@ const lights = createLights(scene);
 const textures = createTextures();
 const buildMaterial = createMaterialFactory(textures);
 
-// 9. Controles FPS (WASD + mouse look + confinado al cuarto + obstáculos)
-const obstacles = [...walls, panel, ...pieces.children.filter(c => c.isMesh)];
-const fpsControl = setupCameraFPS(cam, renderer, room.userData.bounds, obstacles);
+// 9. Estado compartido: ref para saber si se está arrastrando una pieza
+const draggingRef = { current: false };
 
-// 10. Drag de piezas con colisiones
+// 10. Controles FPS (WASD + mouse look + confinado al cuarto + obstáculos)
+const obstacles = [...walls, panel, ...pieces.children.filter(c => c.isMesh)];
+const fpsControl = setupCameraFPS(cam, renderer, room.userData.bounds, obstacles, draggingRef);
+
+// 11. Drag de piezas con colisiones
+//     (el estado draggingRef se comparte con CameraFPS para evitar loops)
 const activeCameraRef = { current: cam };
 
 let interfaceCtrl;
@@ -56,9 +61,11 @@ const dragManager = setupDragManager(activeCameraRef, renderer, {
     onSelect: (mesh) => {
         if (interfaceCtrl) interfaceCtrl.onPieceSelected(mesh);
     },
+    onDragStart: () => { draggingRef.current = true; },
+    onDragEnd:   () => { draggingRef.current = false; },
 });
 
-// 11. Interfaz de usuario (HUD + panel)
+// 12. Interfaz de usuario (HUD + panel)
 interfaceCtrl = setupInterface({
     piecesGroup: pieces,
     buildMaterial,
@@ -66,44 +73,15 @@ interfaceCtrl = setupInterface({
     dragManager,
 });
 
-// 12. Responsive
+// 13. Responsive
 setupResize(cam, renderer);
 
-// 13. Bucle de renderizado con físicas + FPS
-function animate() {
-    requestAnimationFrame(animate);
-
-    // Actualizar movimiento FPS
-    fpsControl.update();
-
-    const draggedMesh = window.__draggingPiece ? dragManager.getSelected() : null;
-
-    for (const child of pieces.children) {
-        if (!child.isMesh) continue;
-
-        // La pieza que se arrastra no recibe físicas
-        if (child === draggedMesh) {
-            child.userData.velY = 0;
-            child.userData.unstable = false;
-            continue;
-        }
-
-        // Física: gravedad + estabilidad + empuje
-        dragManager.applyPhysics(child);
-
-        // Rotación de la esfera (rodar)
-        if (child.userData.label === 'Esfera') {
-            const prevX = child.userData.prevX ?? child.position.x;
-            const prevZ = child.userData.prevZ ?? child.position.z;
-            const dx = child.position.x - prevX;
-            const dz = child.position.z - prevZ;
-            child.rotation.x -= dz * 3;
-            child.rotation.z += dx * 3;
-            child.userData.prevX = child.position.x;
-            child.userData.prevZ = child.position.z;
-        }
-    }
-
-    renderer.render(scene, activeCameraRef.current);
-}
-animate();
+// 14. Bucle de renderizado con físicas + FPS
+setupAnimationLoop({
+    scene,
+    renderer,
+    activeCameraRef,
+    fpsControl,
+    pieces,
+    dragManager,
+});

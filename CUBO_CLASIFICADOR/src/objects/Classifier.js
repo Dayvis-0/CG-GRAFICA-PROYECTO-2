@@ -5,6 +5,8 @@ import {
     squareHole,
     triangleHole,
     diamondHole,
+    hexagonHole,
+    starHole,
     rectHole,
 } from '../utils/holeShapes.js';
 
@@ -12,7 +14,7 @@ import {
 
 const OUTER       = 4;      // ancho y fondo exterior
 const WALL_THICK  = 0.08;   // grosor de cada pared (más delgada = más hueco)
-const WALL_HEIGHT = 2.5;    // altura de las paredes (sin tapa)
+export const WALL_HEIGHT = 2.5;    // altura de las paredes (sin tapa)
 const PANEL_DEPTH = 0.5;    // grosor del panel superior con huecos
 const MID         = OUTER / 2;
 
@@ -39,6 +41,8 @@ const HOLE_BUILDERS = {
     square:   (cfg) => squareHole(cfg.cx, cfg.cy, cfg.hole.side),
     triangle: (cfg) => triangleHole(cfg.cx, cfg.cy, cfg.hole.r),
     diamond:  (cfg) => diamondHole(cfg.cx, cfg.cy, cfg.hole.rx, cfg.hole.ry),
+    hexagon:  (cfg) => hexagonHole(cfg.cx, cfg.cy, cfg.hole.r),
+    star:     (cfg) => starHole(cfg.cx, cfg.cy, cfg.hole.outerR, cfg.hole.innerR, cfg.hole.points || 4),
     rect:     (cfg) => rectHole(cfg.cx, cfg.cy, cfg.hole.w, cfg.hole.h),
 };
 
