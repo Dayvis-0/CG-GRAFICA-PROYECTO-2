@@ -1,12 +1,14 @@
 /**
  * Configura el HUD y panel de control del Cubo Clasificador.
  * (Modo FPS: solo cámara perspectiva, proyección fija)
+ *
+ * Responsabilidad ÚNICA: manejar la interfaz DOM (HUD + panel).
+ * Ya no escucha teclado — eso vive en InputManager + AnimationLoop.
  */
 export function setupInterface({
     piecesGroup,
     buildMaterial,
     lights,
-    dragManager,
 }) {
     const labelToMesh = {};
     piecesGroup.children.forEach(c => {
@@ -157,18 +159,6 @@ export function setupInterface({
             const isOn = tg.classList.toggle('on');
             lights[key].visible = isOn;
         };
-    });
-
-    // ─── TECLADO: Flechas ──────────────────────
-    window.addEventListener('keydown', (e) => {
-        if (!selectedKey) return;
-        const step = 0.15;
-        switch (e.key) {
-            case 'ArrowUp':    dragManager.moveSelectedBy( 0, -step); e.preventDefault(); break;
-            case 'ArrowDown':  dragManager.moveSelectedBy( 0,  step); e.preventDefault(); break;
-            case 'ArrowLeft':  dragManager.moveSelectedBy(-step,  0); e.preventDefault(); break;
-            case 'ArrowRight': dragManager.moveSelectedBy( step,  0); e.preventDefault(); break;
-        }
     });
 
     // ─── Inicializar HUD ────────────────────────

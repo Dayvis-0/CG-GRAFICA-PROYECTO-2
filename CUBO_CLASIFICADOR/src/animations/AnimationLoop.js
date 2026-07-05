@@ -1,5 +1,12 @@
 /**
- * Bucle de renderizado con físicas, FPS y rotación de esfera.
+ * Bucle de renderizado con físicas y comportamiento polimórfico por pieza.
+ *
+ * Responsabilidades:
+ * 1. Avanzar el control FPS
+ * 2. Ejecutar físicas (delegado a PhysicsSystem)
+ * 3. Mover pieza seleccionada con flechas (desde InputManager)
+ * 4. Ejecutar update() polimórfico de cada pieza (evita ifs por tipo)
+ * 5. Renderizar
  *
  * @param {object} opts
  * @param {THREE.Scene}           opts.scene
@@ -7,7 +14,9 @@
  * @param {{ current: THREE.Camera }} opts.activeCameraRef
  * @param {{ update: function }}   opts.fpsControl
  * @param {THREE.Group}           opts.pieces
- * @param {object}                opts.dragManager
+ * @param {object}                opts.physicsSystem   — { update(draggedMesh) }
+ * @param {object}                opts.inputManager    — { isDown(key) }
+ * @param {object}                opts.dragManager     — { getSelected(), moveSelectedBy(dx, dz) }
  */
 export function setupAnimationLoop({
     scene,
@@ -15,45 +24,67 @@ export function setupAnimationLoop({
     activeCameraRef,
     fpsControl,
     pieces,
+    physicsSystem,
+    inputManager,
     dragManager,
 }) {
+    // ─── Comportamiento polimórfico por pieza ────────────────────
+    // En lugar de if (label === 'Esfera') en el loop, cada pieza
+    // expone su propio update(). Mañana agregar otra animación es
+    // tan simple como setear child.userData.update = fn.
+
+    for (const child of pieces.children) {
+        if (!child.isMesh) continue;
+
+        switch (child.userData.label) {
+            case 'Esfera':
+                child.userData.update = function sphereUpdate(mesh, isDragged) {
+                    if (isDragged) return;
+                    const prevX = mesh.userData.prevX ?? mesh.position.x;
+                    const prevZ = mesh.userData.prevZ ?? mesh.position.z;
+                    const dx = mesh.position.x - prevX;
+                    const dz = mesh.position.z - prevZ;
+                    mesh.rotation.x -= dz * 3;
+                    mesh.rotation.z += dx * 3;
+                    mesh.userData.prevX = mesh.position.x;
+                    mesh.userData.prevZ = mesh.position.z;
+                };
+                break;
+            // Futuras piezas con comportamiento propio se agregan acá
+            // case 'Cubo': child.userData.update = ...
+        }
+    }
+
+    // ─── Bucle ────────────────────────────────────────────────────
+
     function animate() {
         requestAnimationFrame(animate);
 
         // 1. Movimiento FPS (WASD + mouse look)
         fpsControl.update();
 
-        // 2. Físicas por pieza
         const draggedMesh = dragManager.getSelected();
-        const isDragging = draggedMesh !== null;
 
+        // 2. Físicas (gravedad, estabilidad, empuje)
+        physicsSystem.update(draggedMesh);
+
+        // 3. Movimiento con flechas (polling desde InputManager)
+        if (draggedMesh) {
+            const step = 0.08;
+            if (inputManager.isDown('ArrowUp'))    dragManager.moveSelectedBy( 0, -step);
+            if (inputManager.isDown('ArrowDown'))  dragManager.moveSelectedBy( 0,  step);
+            if (inputManager.isDown('ArrowLeft'))  dragManager.moveSelectedBy(-step,  0);
+            if (inputManager.isDown('ArrowRight')) dragManager.moveSelectedBy( step,  0);
+        }
+
+        // 4. Update polimórfico por pieza (rotación de esfera, etc.)
         for (const child of pieces.children) {
-            if (!child.isMesh) continue;
-
-            // La pieza que se arrastra no recibe físicas
-            if (child === draggedMesh) {
-                child.userData.velY = 0;
-                child.userData.unstable = false;
-                continue;
-            }
-
-            // Gravedad + estabilidad + empuje
-            dragManager.applyPhysics(child);
-
-            // Rotación de la esfera (rodar al moverse)
-            if (child.userData.label === 'Esfera') {
-                const prevX = child.userData.prevX ?? child.position.x;
-                const prevZ = child.userData.prevZ ?? child.position.z;
-                const dx = child.position.x - prevX;
-                const dz = child.position.z - prevZ;
-                child.rotation.x -= dz * 3;
-                child.rotation.z += dx * 3;
-                child.userData.prevX = child.position.x;
-                child.userData.prevZ = child.position.z;
+            if (child.userData.update) {
+                child.userData.update(child, child === draggedMesh);
             }
         }
 
-        // 3. Render
+        // 5. Render
         renderer.render(scene, activeCameraRef.current);
     }
 
