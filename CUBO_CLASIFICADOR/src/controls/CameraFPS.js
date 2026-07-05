@@ -25,38 +25,29 @@ export function setupCameraFPS(camera, renderer, roomBounds, obstacles = []) {
     // Mapa de código físico por si e.key falla en algunos navegadores
     const CODE_MAP = { KeyW: 'w', KeyA: 'a', KeyS: 's', KeyD: 'd' };
 
-    // Mouse look
-    let isDragging = false;
-    let lastX = 0, lastY = 0;
-
+    // Pointer Lock: click en el canvas bloquea el mouse para controlar cámara
+    let isLocked = false;
     const el = renderer.domElement;
 
-    // ── Mouse: click + drag para mirar ───
-    el.addEventListener('mousedown', (e) => {
-        // No interferir con drag de piezas
-        if (window.__draggingPiece) return;
-        isDragging = true;
-        lastX = e.clientX;
-        lastY = e.clientY;
-        el.style.cursor = 'grabbing';
+    document.addEventListener('pointerlockchange', () => {
+        isLocked = document.pointerLockElement === el;
+        el.style.cursor = isLocked ? 'none' : 'default';
     });
 
-    window.addEventListener('mouseup', () => {
-        isDragging = false;
-        el.style.cursor = 'default';
+    // Click en canvas → activar pointer lock (si no está bloqueado)
+    el.addEventListener('click', () => {
+        if (!isLocked && !window.__draggingPiece) {
+            el.requestPointerLock();
+        }
     });
 
-    window.addEventListener('mousemove', (e) => {
-        if (!isDragging) return;
+    // Mouse move → cámara (solo si pointer lock activo y no arrastrando pieza)
+    document.addEventListener('mousemove', (e) => {
+        if (!isLocked || window.__draggingPiece) return;
 
-        const dx = e.clientX - lastX;
-        const dy = e.clientY - lastY;
-        lastX = e.clientX;
-        lastY = e.clientY;
-
-        // Sensibilidad
-        yaw -= dx * 0.003;
-        pitch += dy * 0.003;
+        // Con pointer lock, movementX/movementY dan el delta exacto del mouse
+        yaw -= e.movementX * 0.003;
+        pitch += e.movementY * 0.003;
 
         // Clamp pitch para no voltear la cámara
         const maxPitch = Math.PI / 2 - 0.05;
