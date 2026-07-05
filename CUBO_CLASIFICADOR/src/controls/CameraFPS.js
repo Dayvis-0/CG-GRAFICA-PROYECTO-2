@@ -20,6 +20,8 @@ export function setupCameraFPS(camera, renderer, roomBounds) {
 
     // Estado de movimiento (solo WASD — flechas son para mover piezas)
     const keys = { w: false, a: false, s: false, d: false };
+    // Mapa de código físico por si e.key falla en algunos navegadores
+    const CODE_MAP = { KeyW: 'w', KeyA: 'a', KeyS: 's', KeyD: 'd' };
 
     // Mouse look
     let isDragging = false;
@@ -64,12 +66,24 @@ export function setupCameraFPS(camera, renderer, roomBounds) {
     // ── Teclado: solo WASD (flechas reservadas para mover piezas) ───
     window.addEventListener('keydown', (e) => {
         const k = e.key.toLowerCase();
-        if (k in keys) keys[k] = true;
+        if (k in keys) {
+            keys[k] = true;
+            e.preventDefault();
+        } else if (CODE_MAP[e.code]) {
+            keys[CODE_MAP[e.code]] = true;
+            e.preventDefault();
+        }
     });
 
     window.addEventListener('keyup', (e) => {
         const k = e.key.toLowerCase();
-        if (k in keys) keys[k] = false;
+        if (k in keys) {
+            keys[k] = false;
+            e.preventDefault();
+        } else if (CODE_MAP[e.code]) {
+            keys[CODE_MAP[e.code]] = false;
+            e.preventDefault();
+        }
     });
 
     // ── Actualizar rotación de cámara ───
@@ -120,7 +134,7 @@ export function setupCameraFPS(camera, renderer, roomBounds) {
 
     // Inicializar
     updateCameraRotation();
-    camera.position.set(0, 1.6, 0);
+    camera.position.set(5, 1.6, 5);
 
     return { update };
 }

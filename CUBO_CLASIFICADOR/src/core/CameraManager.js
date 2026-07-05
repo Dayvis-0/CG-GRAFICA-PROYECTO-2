@@ -10,7 +10,7 @@ export function createCamera() {
     const ASP = window.innerWidth / window.innerHeight;
 
     const cam = new THREE.PerspectiveCamera(70, ASP, 0.1, 100);
-    cam.position.set(0, 1.6, 0);
+    cam.position.set(5, 1.6, 5);
 
     return { cam };
 }
