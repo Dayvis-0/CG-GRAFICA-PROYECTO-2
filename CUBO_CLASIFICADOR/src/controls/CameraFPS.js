@@ -10,9 +10,11 @@ import * as THREE from 'three';
  * @param {THREE.WebGLRenderer} renderer
  * @param {object} roomBounds - { half: number, height: number, margin: number }
  */
-export function setupCameraFPS(camera, renderer, roomBounds) {
-    const { half, margin } = roomBounds;
+export function setupCameraFPS(camera, renderer, roomBounds, obstacles = []) {
+    const { half, height, margin } = roomBounds;
     const limit = half - margin;
+    const yMin = margin;
+    const yMax = height - margin;
 
     // Estado de rotación
     let yaw = 0;      // rotación horizontal (eje Y)
@@ -54,7 +56,7 @@ export function setupCameraFPS(camera, renderer, roomBounds) {
 
         // Sensibilidad
         yaw -= dx * 0.003;
-        pitch -= dy * 0.003;
+        pitch += dy * 0.003;
 
         // Clamp pitch para no voltear la cámara
         const maxPitch = Math.PI / 2 - 0.05;
@@ -98,11 +100,41 @@ export function setupCameraFPS(camera, renderer, roomBounds) {
     const forward = new THREE.Vector3();
     const right = new THREE.Vector3();
     const move = new THREE.Vector3();
+    const target = new THREE.Vector3();
+    const _box = new THREE.Box3();
+    const COLLIDE_MARGIN = 0.35;
+
+    function isBlocked(pos) {
+        for (const mesh of obstacles) {
+            if (!mesh.visible) continue;
+            _box.setFromObject(mesh);
+            if (
+                pos.x >= _box.min.x - COLLIDE_MARGIN &&
+                pos.x <= _box.max.x + COLLIDE_MARGIN &&
+                pos.y >= _box.min.y - COLLIDE_MARGIN &&
+                pos.y <= _box.max.y + COLLIDE_MARGIN &&
+                pos.z >= _box.min.z - COLLIDE_MARGIN &&
+                pos.z <= _box.max.z + COLLIDE_MARGIN
+            ) {
+                return true;
+            }
+        }
+        return false;
+    }
 
     function updateMovement() {
-        // Vectores de dirección basados en yaw
-        forward.set(Math.sin(yaw), 0, Math.cos(yaw));
-        right.set(Math.sin(yaw + Math.PI / 2), 0, Math.cos(yaw + Math.PI / 2));
+        // Dirección hacia adelante basada en yaw Y pitch (vuelo libre)
+        forward.set(
+            Math.sin(yaw) * Math.cos(pitch),
+            -Math.sin(pitch),
+            Math.cos(yaw) * Math.cos(pitch)
+        );
+        // Derecha solo horizontal (yaw), como strafe de FPS
+        right.set(
+            Math.sin(yaw + Math.PI / 2),
+            0,
+            Math.cos(yaw + Math.PI / 2)
+        );
 
         move.set(0, 0, 0);
 
@@ -113,16 +145,20 @@ export function setupCameraFPS(camera, renderer, roomBounds) {
 
         if (move.lengthSq() > 0) {
             move.normalize().multiplyScalar(speed);
-            camera.position.x += move.x;
-            camera.position.z += move.z;
+
+            // Calcular posición deseada
+            target.copy(camera.position).add(move);
 
             // Confinar dentro del cuarto
-            camera.position.x = Math.max(-limit, Math.min(limit, camera.position.x));
-            camera.position.z = Math.max(-limit, Math.min(limit, camera.position.z));
-        }
+            target.x = Math.max(-limit, Math.min(limit, target.x));
+            target.y = Math.max(yMin, Math.min(yMax, target.y));
+            target.z = Math.max(-limit, Math.min(limit, target.z));
 
-        // Altura fija de ojos
-        camera.position.y = 1.6;
+            // Chequear colisión con obstáculos
+            if (!isBlocked(target)) {
+                camera.position.copy(target);
+            }
+        }
 
         updateCameraRotation();
     }

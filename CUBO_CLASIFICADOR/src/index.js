@@ -41,8 +41,9 @@ const lights = createLights(scene);
 const textures = createTextures();
 const buildMaterial = createMaterialFactory(textures);
 
-// 9. Controles FPS (WASD + mouse look + confinado al cuarto)
-const fpsControl = setupCameraFPS(cam, renderer, room.userData.bounds);
+// 9. Controles FPS (WASD + mouse look + confinado al cuarto + obstáculos)
+const obstacles = [...walls, panel, ...pieces.children.filter(c => c.isMesh)];
+const fpsControl = setupCameraFPS(cam, renderer, room.userData.bounds, obstacles);
 
 // 10. Drag de piezas con colisiones
 const activeCameraRef = { current: cam };
