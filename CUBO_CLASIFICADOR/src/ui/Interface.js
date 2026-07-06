@@ -101,7 +101,6 @@ export function setupInterface({
     }
 
     // ─── SELECCIÓN ──────────────────────────────
-
     // 1) Callback desde DragManager (click en 3D)
     function onPieceSelected(mesh) {
         if (mesh && mesh.userData.label && labelToMesh[mesh.userData.label]) {

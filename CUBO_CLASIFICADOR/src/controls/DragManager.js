@@ -45,7 +45,6 @@ export function setupDragManager(activeCameraRef, renderer, {
     }
 
     // ─── Eventos de puntero ───────────────────────────────────────
-
     function onPointerDown(e) {
         pointer.x =  (e.clientX / window.innerWidth)  * 2 - 1;
         pointer.y = -(e.clientY / window.innerHeight) * 2 + 1;

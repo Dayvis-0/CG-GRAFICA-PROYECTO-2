@@ -33,7 +33,6 @@ export function setupCameraFPS(camera, renderer, roomBounds, obstacles = [], dra
     el.addEventListener('click', onCanvasClick);
 
     // ─── Mouse look ──────────────────────────────────────────────
-
     const _onMouseMove = (e) => {
         if (!inputManager.isPointerLocked() || draggingRef.current) return;
 
@@ -48,7 +47,6 @@ export function setupCameraFPS(camera, renderer, roomBounds, obstacles = [], dra
     document.addEventListener('mousemove', _onMouseMove);
 
     // ─── Rotación ────────────────────────────────────────────────
-
     function updateCameraRotation() {
         camera.rotation.order = 'YXZ';
         camera.rotation.y = yaw;
@@ -56,7 +54,6 @@ export function setupCameraFPS(camera, renderer, roomBounds, obstacles = [], dra
     }
 
     // ─── Movimiento (WASD desde InputManager) ────────────────────
-
     const speed = 0.08;
     const forward = new THREE.Vector3();
     const right = new THREE.Vector3();
@@ -120,20 +117,17 @@ export function setupCameraFPS(camera, renderer, roomBounds, obstacles = [], dra
     }
 
     // ─── Update (llamado desde AnimationLoop) ────────────────────
-
     function update() {
         updateMovement();
     }
 
     // ─── Dispose ─────────────────────────────────────────────────
-
     function dispose() {
         el.removeEventListener('click', onCanvasClick);
         document.removeEventListener('mousemove', _onMouseMove);
     }
 
     // ─── Inicializar ─────────────────────────────────────────────
-
     updateCameraRotation();
     camera.position.set(5, 1.6, 5);
 

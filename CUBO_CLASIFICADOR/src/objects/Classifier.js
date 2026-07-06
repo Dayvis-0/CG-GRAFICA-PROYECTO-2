@@ -11,7 +11,6 @@ import {
 } from '../utils/holeShapes.js';
 
 // Constantes del cubo
-
 const OUTER       = 4;      // ancho y fondo exterior
 const WALL_THICK  = 0.08;   // grosor de cada pared (más delgada = más hueco)
 export const WALL_HEIGHT = 2.5;    // altura de las paredes (sin tapa)
@@ -19,7 +18,6 @@ const PANEL_DEPTH = 0.5;    // grosor del panel superior con huecos
 const MID         = OUTER / 2;
 
 // Material compartido
-
 const WALL_MAT = new THREE.MeshStandardMaterial({
     color: 0x2a4a55,
     roughness: 0.6,
@@ -35,7 +33,6 @@ const PANEL_MAT = new THREE.MeshStandardMaterial({
 });
 
 // Dispatcher de creación de huecos
-
 const HOLE_BUILDERS = {
     circle:   (cfg) => circleHole(cfg.cx, cfg.cy, cfg.hole.r),
     square:   (cfg) => squareHole(cfg.cx, cfg.cy, cfg.hole.side),
@@ -47,7 +44,6 @@ const HOLE_BUILDERS = {
 };
 
 // Función principal
-
 /**
  * Crea el cubo clasificador HUECO con 6 huecos agrandados en la cara superior.
  *
@@ -98,7 +94,6 @@ export function createClassifier() {
 }
 
 // Construcción del panel superior con los 6 huecos
-
 function buildTopPanel() {
     const shape = new THREE.Shape();
     shape.moveTo(-MID, -MID);

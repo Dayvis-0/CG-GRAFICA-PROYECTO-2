@@ -7,7 +7,6 @@
 export const HOLE_TOLERANCE = 0.1;
 
 // ─── Helpers geométricos ───
-
 export function pointInTriangle(px, py, ax, ay, bx, by, cx, cy) {
     const d = (by - cy) * (ax - cx) + (cx - bx) * (ay - cy);
     const a = ((by - cy) * (px - cx) + (cx - bx) * (py - cy)) / d;

@@ -14,7 +14,6 @@ export function createRoom({ size = 14, height = 8 } = {}) {
     const half = size / 2;
 
     // ── Materiales PBR con sombras ──
-
     // Piso: gris cemento
     const floorMat = new THREE.MeshStandardMaterial({
         color: 0x7a8084,

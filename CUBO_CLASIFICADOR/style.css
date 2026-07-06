@@ -76,6 +76,45 @@ canvas { display: block; }
 }
 .objbtn.active { background: #5be3ff; color: #061014; border-color: #5be3ff; }
 
+/* ── Toggle de luces ── */
+.lightrow {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin: 6px 0;
+    font-size: 11px;
+    color: #b0d8e0;
+}
+.lighttoggle {
+    width: 36px;
+    height: 18px;
+    border-radius: 10px;
+    background: #1f3d42;
+    border: 1px solid #2a6f7a;
+    cursor: pointer;
+    position: relative;
+    transition: 0.2s;
+    flex-shrink: 0;
+}
+.lighttoggle .dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: #4a7a84;
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    transition: 0.2s;
+}
+.lighttoggle.on {
+    background: #2a6f7a;
+    border-color: #5be3ff;
+}
+.lighttoggle.on .dot {
+    left: 20px;
+    background: #5be3ff;
+}
+
 /* Botones de material */
 .matbtn {
     display: block;
@@ -100,6 +139,7 @@ canvas { display: block; }
     display: inline-block;
     padding: 6px 14px;
 }
+.wfbtn.active { background: #e060c0; color: #0a0010; border-color: #e060c0; }
 
 /* Botones de proyección */
 .projbtn {
@@ -107,6 +147,7 @@ canvas { display: block; }
     padding: 6px 4px;
     text-align: center;
 }
+.projbtn.active { background: #ff7a9c; color: #1a0008; border-color: #ff7a9c; }
 
 /* Hint */
 #hint {

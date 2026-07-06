@@ -26,7 +26,6 @@ export function createBodyFactory(world, materials) {
     const bodyIdToMesh = new Map();
 
     // ─── Helpers ─────────────────────────────────────────────────
-
     /**
      * Construye la forma cannon correspondiente a cada pieza según su label.
      * Cada forma se elige para que el comportamiento físico sea lo más realista posible:
@@ -116,7 +115,6 @@ export function createBodyFactory(world, materials) {
     }
 
     // ─── API pública ────────────────────────────────────────────
-
     /**
      * Registra una pieza como body dinámico. Sincroniza posición/rotación inicial.
      * @param {THREE.Mesh} mesh

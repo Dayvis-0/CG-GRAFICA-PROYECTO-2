@@ -20,7 +20,6 @@ export function createPhysicsSystem(piecesGroup, bodyFactory, physicsWorld, clas
     const kinematicPieces = new Set();
 
     // ─── Modo kinematic (drag) ──────────────────────────────────
-
     /**
      * Pone una pieza en modo kinematic: cannon no aplica gravedad sobre ella
      * pero otras piezas dinámicas chocan contra ella. La posición es
@@ -87,7 +86,6 @@ export function createPhysicsSystem(piecesGroup, bodyFactory, physicsWorld, clas
     }
 
     // ─── Update por frame ───────────────────────────────────────
-
     /**
      * Avanza la simulación copiando mesh ≈ body para todas las piezas dinámicas.
      * @param {number} dt

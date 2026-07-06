@@ -25,7 +25,6 @@ export function createInputManager() {
     let locked = false;
 
     // ─── Teclado ──────────────────────────────────────────────────
-
     window.addEventListener('keydown', (e) => {
         keys[e.key] = true;
 
@@ -41,13 +40,11 @@ export function createInputManager() {
     });
 
     // ─── Pointer Lock ────────────────────────────────────────────
-
     document.addEventListener('pointerlockchange', () => {
         locked = document.pointerLockElement !== null;
     });
 
     // ─── API pública ──────────────────────────────────────────────
-
     return {
         /**
          * ¿Una tecla está siendo presionada?
