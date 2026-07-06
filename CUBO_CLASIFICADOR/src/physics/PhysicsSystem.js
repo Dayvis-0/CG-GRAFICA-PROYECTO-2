@@ -75,8 +75,9 @@ export function createPhysicsSystem(piecesGroup, bodyFactory, physicsWorld, clas
         body.position.set(pos.x, pos.y, pos.z);
 
         // dt de referencia para derivar velocidad: timestep fijo del mundo.
-        // Consistente con fixedStep(1/60) que usa el step principal.
-        const dt = 1 / 60;
+        // Debe coincidir con el primer argumento de world.fixedStep().
+        // PhysicsWorld ahora usa fixedStep(1/240, dt).
+        const dt = 1 / 240;
 
         body.velocity.set(
             (pos.x - oldX) / dt,

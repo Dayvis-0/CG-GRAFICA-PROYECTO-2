@@ -65,12 +65,12 @@ const bodyFactory = createBodyFactory(physicsWorld.world, physicsWorld.materials
 // 14. Registrar cuerpos estáticos: piso + paredes del cuarto, paredes del
 //     cubo clasificador y panel perforado.
 //     El panel usa Trimesh para respetar los huecos (las piezas caen por ellos).
-//     Importante: registrar TODAS las paredes del cuarto, no solo el piso.
+//     Las paredes del cuarto usan minThick=0.5 para evitar tunneling
+//     (son PlaneGeometry, el Box cannon queda muy delgado).
 for (const child of room.children) {
     if (!child.isMesh) continue;
-    // El primer mesh es el piso (PlaneGeometry en y=0), el resto son paredes/techo
     const kind = (child.position.y < 0.5) ? 'ground' : 'wall';
-    bodyFactory.registerStatic(child, kind);
+    bodyFactory.registerStatic(child, kind, { minThick: 0.8 });
 }
 
 for (const wall of walls) {
@@ -128,7 +128,7 @@ interfaceCtrl = setupInterface({
 // 23. Responsive
 setupResize(cam, renderer);
 
-// 24. Bucle de renderizado con físicas + input
+// 24. Bucle de renderizado con físicas + input + safety net
 setupAnimationLoop({
     scene,
     renderer,
@@ -138,4 +138,5 @@ setupAnimationLoop({
     physicsSystem,
     inputManager,
     dragManager,
+    roomBounds: room.userData.bounds,
 });

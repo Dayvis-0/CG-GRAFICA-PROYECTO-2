@@ -160,9 +160,13 @@ export function createBodyFactory(world, materials) {
      *
      * @param {THREE.Mesh} mesh
      * @param {'wall'|'panel'|'ground'} kind
+     * @param {object}                  [opts]
+     * @param {number}                  [opts.minThick] — espesor mínimo para
+     *   todas las dimensiones. Sirve para evitar tunneling en paredes delgadas
+     *   (ej: 0.5 para paredes del cuarto, que son PlaneGeometry de espesor 0).
      * @returns {CANNON.Body}
      */
-    function registerStatic(mesh, kind) {
+    function registerStatic(mesh, kind, opts = {}) {
         let shape;
 
         if (kind === 'panel') {
@@ -176,10 +180,11 @@ export function createBodyFactory(world, materials) {
             const bbox = new THREE.Box3().setFromObject(mesh);
             const size = new THREE.Vector3();
             bbox.getSize(size);
-            // Evitar dimensiones cero (seguridad)
-            const sx = Math.max(size.x, 0.1);
-            const sy = Math.max(size.y, 0.1);
-            const sz = Math.max(size.z, 0.1);
+            // Evitar dimensiones cero (seguridad) + espesor mínimo anti-tunneling
+            const minDim = opts.minThick ?? 0.1;
+            const sx = Math.max(size.x, minDim);
+            const sy = Math.max(size.y, minDim);
+            const sz = Math.max(size.z, minDim);
             shape = new CANNON.Box(new CANNON.Vec3(sx / 2, sy / 2, sz / 2));
         }
 

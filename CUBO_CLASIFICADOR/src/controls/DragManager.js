@@ -93,8 +93,20 @@ export function setupDragManager(activeCameraRef, renderer, {
 
     // ─── Clamp a límites del cuarto ──────────────────────────────
     /**
+     * Margen de seguridad contra las paredes del cuarto.
+     * Las paredes en cannon-es tienen minThick: 0.8 (se extienden 0.4
+     * hacia adentro del cuarto desde la superficie visual). Sin este
+     * margen, una pieza soltada contra la pared ya estaría superpuesta
+     * con el volumen de física y el solver no siempre logra expulsarla
+     * → la pieza se traspasa.
+     */
+    const ROOM_MARGIN = 0.5;
+
+    /**
      * Aplica clamp a la posición para que el AABB completo de la pieza
-     * quede DENTRO del cuarto. Se basa en el AABB actual de la pieza
+     * quede DENTRO del cuarto, con un margen de seguridad que evita que
+     * el cuerpo físico de la pieza superponga con las paredes físicas.
+     * Se basa en el AABB actual de la pieza
      * (offset desde su posición hasta cada cara del AABB).
      * Esto funciona incluso si la pieza no está centrada en su origen.
      *
@@ -119,10 +131,16 @@ export function setupDragManager(activeCameraRef, renderer, {
         const half = roomBounds.half;
         const h    = roomBounds.height;
 
-        pos.x = Math.max(-half + _offMin.x, Math.min(half - _offMax.x, pos.x));
-        pos.z = Math.max(-half + _offMin.z, Math.min(half - _offMax.z, pos.z));
+        // Usamos ROOM_MARGIN (0.5) para reducir el área efectiva del cuarto.
+        // Esto mantiene el AABB de la pieza alejado de la superficie
+        // visual de la pared lo suficiente para que su cuerpo físico
+        // no superponga con el volumen de colisión de la pared (minThick/2 = 0.4).
+        // Específico para piezas (roomBounds.margin = 0.5 es para la cámara).
+        const m = ROOM_MARGIN;
+        pos.x = Math.max(-half + _offMin.x + m, Math.min(half - _offMax.x - m, pos.x));
+        pos.z = Math.max(-half + _offMin.z + m, Math.min(half - _offMax.z - m, pos.z));
         // Y: sin piso (minY ya lo maneja), solo techo
-        pos.y = Math.min(h - _offMax.y, pos.y);
+        pos.y = Math.min(h - _offMax.y - m, pos.y);
 
         return pos;
     }
