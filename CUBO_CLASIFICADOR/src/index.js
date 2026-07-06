@@ -62,10 +62,16 @@ const physicsWorld = createPhysicsWorld();
 // 13. Fábrica de cuerpos rígidos (mapea meshes Three ↔ bodies Cannon)
 const bodyFactory = createBodyFactory(physicsWorld.world, physicsWorld.materials);
 
-// 14. Registrar cuerpos estáticos: piso del cuarto, paredes y panel perforado
+// 14. Registrar cuerpos estáticos: piso + paredes del cuarto, paredes del
+//     cubo clasificador y panel perforado.
 //     El panel usa Trimesh para respetar los huecos (las piezas caen por ellos).
-const roomFloorMesh = room.children.find(c => c.isMesh); // primer hijo = piso
-bodyFactory.registerStatic(roomFloorMesh, 'ground');
+//     Importante: registrar TODAS las paredes del cuarto, no solo el piso.
+for (const child of room.children) {
+    if (!child.isMesh) continue;
+    // El primer mesh es el piso (PlaneGeometry en y=0), el resto son paredes/techo
+    const kind = (child.position.y < 0.5) ? 'ground' : 'wall';
+    bodyFactory.registerStatic(child, kind);
+}
 
 for (const wall of walls) {
     bodyFactory.registerStatic(wall, 'wall');
@@ -87,15 +93,24 @@ const obstacles = [...walls, panel, ...pieces.children.filter(c => c.isMesh)];
 // 18. Control FPS (WASD + mouse look + confinado al cuarto + obstáculos)
 const fpsControl = setupCameraFPS(cam, renderer, room.userData.bounds, obstacles, draggingRef, inputManager);
 
-// 19. Ref activa de cámara (para que DragManager use la cámara actual)
+// 19. Obstáculos estáticos para el arrastre (solo paredes del clasificador).
+//     Las paredes del cuarto se manejan con roomBounds (son planos,
+//     el AABB 3D no puede retener piezas que cambian de altura).
+//     NO incluir el panel (Trimesh) — las piezas deben atravesarlo para
+//     caer por los huecos. NO incluir piezas — las resuelve cannon.
+const dragObstacles = [...walls];
+
+// 20. Ref activa de cámara (para que DragManager use la cámara actual)
 const activeCameraRef = { current: cam };
 
-// 20. Drag de piezas (cinemático en cannon, dinámico al soltar)
+// 21. Drag de piezas (cinemático en cannon, dinámico al soltar)
 let interfaceCtrl;
 const dragManager = setupDragManager(activeCameraRef, renderer, {
     piecesGroup: pieces,
     classifierRules,
     physicsSystem,
+    obstacles: dragObstacles,
+    roomBounds: room.userData.bounds,
     onSelect: (mesh) => {
         if (interfaceCtrl) interfaceCtrl.onPieceSelected(mesh);
     },
@@ -103,17 +118,17 @@ const dragManager = setupDragManager(activeCameraRef, renderer, {
     onDragEnd:   () => { draggingRef.current = false; },
 });
 
-// 21. Interfaz de usuario (HUD + panel)
+// 22. Interfaz de usuario (HUD + panel)
 interfaceCtrl = setupInterface({
     piecesGroup: pieces,
     buildMaterial,
     lights,
 });
 
-// 22. Responsive
+// 23. Responsive
 setupResize(cam, renderer);
 
-// 23. Bucle de renderizado con físicas + input
+// 24. Bucle de renderizado con físicas + input
 setupAnimationLoop({
     scene,
     renderer,

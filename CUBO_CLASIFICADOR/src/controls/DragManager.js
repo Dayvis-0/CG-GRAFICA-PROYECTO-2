@@ -2,10 +2,17 @@ import * as THREE from 'three';
 
 /**
  * Maneja exclusivamente el ARRASTRE de piezas con el mouse.
- * - No implementa colisiones AABB a mano: cannon-es resuelve las colisiones
- *   automáticamente entre la pieza kinematic y los demás cuerpos.
- * - Respeto del hueco: si el cursor deja la pieza sobre su hueco correcto,
- *   permitimos que baje dentro (no la frenamos en Y = minY).
+ * - Las piezas en arrastre usan modo kinematic en cannon-es (empujan
+ *   dinámicas, pero NO pueden atravesar estáticas por diseño del motor).
+ * - Las PAREDES DEL CUARTO se manejan con clamp a límites de la caja
+ *   (roomBounds), porque son PlaneGeometry (espesor cero) y el AABB
+ *   3D de THREE no puede retener piezas que se eleven por encima de
+ *   su rango Y.
+ * - Las PAREDES DEL CLASIFICADOR se manejan con AABB individual
+ *   (tienen espesor real de 0.08, el AABB estándar funciona bien).
+ * - El PANEL perforado NO se incluye — las piezas deben poder
+ *   atravesarlo para caer por los huecos.
+ * - Deslizamiento natural por eje (X → Z → Y).
  *
  * @param {{ current: THREE.Camera }} activeCameraRef
  * @param {THREE.WebGLRenderer}       renderer
@@ -13,6 +20,8 @@ import * as THREE from 'three';
  * @param {THREE.Group}               opts.piecesGroup
  * @param {object}                    opts.classifierRules   — { isOverOwnHole(mesh) }
  * @param {object}                    opts.physicsSystem      — { setKinematic, setKinematicPosition }
+ * @param {object}                    opts.roomBounds         — { half, height } del cuarto
+ * @param {THREE.Mesh[]}              opts.obstacles          — meshes estáticos (solo clasificador)
  * @param {function}                  opts.onSelect           — (mesh | null) => void
  * @param {function}                  opts.onDragStart         — () => void
  * @param {function}                  opts.onDragEnd           — () => void
@@ -21,6 +30,8 @@ export function setupDragManager(activeCameraRef, renderer, {
     piecesGroup,
     classifierRules,
     physicsSystem,
+    roomBounds = { half: 7, height: 8 },
+    obstacles = [],
     onSelect,
     onDragStart,
     onDragEnd,
@@ -36,6 +47,134 @@ export function setupDragManager(activeCameraRef, renderer, {
     let selected = null;
     let dragging = false;
 
+    // ─── AABBs de obstáculos (solo clasificador, pre-computados) ──
+    const obstacleBoxes = obstacles.map(m => new THREE.Box3().setFromObject(m));
+
+    // Reusables (evitar GC en el hot path)
+    const _pieceBox  = new THREE.Box3();
+    const _candBox   = new THREE.Box3();
+    const _size      = new THREE.Vector3();
+    const _offMin    = new THREE.Vector3();
+    const _offMax    = new THREE.Vector3();
+
+    // ─── Colisión contra obstáculos del clasificador (AABB) ──────
+    /**
+     * ¿El AABB de la pieza centrado en `pos` intersecta algún obstáculo?
+     * Solo se usa con las paredes del clasificador (tienen espesor real,
+     * el AABB 3D funciona bien). NO se usa con las paredes del cuarto
+     * (son planos, el AABB 3D las elude si la pieza cambia de altura).
+     *
+     * @param {THREE.Vector3} pos
+     * @returns {boolean}
+     */
+    function overlapsClassifier(pos) {
+        if (obstacleBoxes.length === 0) return false;
+
+        // AABB de la pieza centrado en la posición candidata
+        _pieceBox.setFromObject(selected);
+        _pieceBox.getSize(_size);
+
+        _candBox.min.set(
+            pos.x - _size.x * 0.5,
+            pos.y - _size.y * 0.5,
+            pos.z - _size.z * 0.5
+        );
+        _candBox.max.set(
+            pos.x + _size.x * 0.5,
+            pos.y + _size.y * 0.5,
+            pos.z + _size.z * 0.5
+        );
+
+        for (const obsBox of obstacleBoxes) {
+            if (_candBox.intersectsBox(obsBox)) return true;
+        }
+        return false;
+    }
+
+    // ─── Clamp a límites del cuarto ──────────────────────────────
+    /**
+     * Aplica clamp a la posición para que el AABB completo de la pieza
+     * quede DENTRO del cuarto. Se basa en el AABB actual de la pieza
+     * (offset desde su posición hasta cada cara del AABB).
+     * Esto funciona incluso si la pieza no está centrada en su origen.
+     *
+     * @param {THREE.Vector3} pos
+     * @returns {THREE.Vector3} — misma referencia, mutada
+     */
+    function clampToRoom(pos) {
+        _pieceBox.setFromObject(selected);
+
+        // Distancia desde selected.position hasta cada cara del AABB
+        _offMin.set(
+            selected.position.x - _pieceBox.min.x,
+            selected.position.y - _pieceBox.min.y,
+            selected.position.z - _pieceBox.min.z,
+        );
+        _offMax.set(
+            _pieceBox.max.x - selected.position.x,
+            _pieceBox.max.y - selected.position.y,
+            _pieceBox.max.z - selected.position.z,
+        );
+
+        const half = roomBounds.half;
+        const h    = roomBounds.height;
+
+        pos.x = Math.max(-half + _offMin.x, Math.min(half - _offMax.x, pos.x));
+        pos.z = Math.max(-half + _offMin.z, Math.min(half - _offMax.z, pos.z));
+        pos.y = Math.max(      _offMin.y, Math.min(h     - _offMax.y, pos.y));
+
+        return pos;
+    }
+
+    // ─── Deslizamiento por eje ────────────────────────────────────
+    /**
+     * Intenta el movimiento en X, Z, Y por separado. Para cada eje,
+     * primero verifica obstáculos del clasificador (AABB), y si pasa,
+     * después aplica clamp a límites del cuarto.
+     * Así la pieza desliza contra paredes/clasificador.
+     *
+     * @param {THREE.Vector3} pos  — posición deseada
+     * @param {THREE.Vector3} from — posición actual
+     * @returns {THREE.Vector3} — posición con colisiones resueltas
+     */
+    function clampMovement(pos, from) {
+        const guarded = from.clone();
+
+        // ── Eje X ──
+        if (pos.x !== guarded.x) {
+            const cx = guarded.clone();
+            cx.x = pos.x;
+            if (!overlapsClassifier(cx)) {
+                // Pasa el clasificador → aplicar room bounds
+                clampToRoom(cx);
+                guarded.x = cx.x;
+            }
+        }
+
+        // ── Eje Z ──
+        if (pos.z !== guarded.z) {
+            const cz = guarded.clone();
+            cz.z = pos.z;
+            if (!overlapsClassifier(cz)) {
+                clampToRoom(cz);
+                guarded.z = cz.z;
+            }
+        }
+
+        // ── Eje Y ──
+        if (pos.y !== guarded.y) {
+            const cy = guarded.clone();
+            cy.y = pos.y;
+            if (!overlapsClassifier(cy)) {
+                clampToRoom(cy);
+                guarded.y = cy.y;
+            }
+        }
+
+        return guarded;
+    }
+
+    // ─── Helpers ──────────────────────────────────────────────────
     function notifySelect(mesh) {
         if (onSelect) onSelect(mesh);
     }
@@ -87,35 +226,28 @@ export function setupDragManager(activeCameraRef, renderer, {
         raycaster.setFromCamera(pointer, activeCameraRef.current);
         raycaster.ray.intersectPlane(dragPlane, target);
 
-        const newPos = target.clone().sub(offset);
+        let newPos = target.clone().sub(offset);
 
-        // Limite inferior: por defecto minY (no atraviesa el piso),
-        // PERO si está sobre su hueco correcto, permitimos bajarla
-        // dentro del clasificador (hasta y = 0.3 para que entre al cubo).
+        // ─── Límite inferior (piso / hueco) ─────────────────────
         if (selected.userData.minY !== undefined) {
             if (classifierRules.isOverOwnHole(selected)) {
-                // Sobre el hueco correcto: permitir bajar dentro del cubo
                 newPos.y = Math.max(0.3, newPos.y);
             } else {
-                // Suelo normal
                 newPos.y = Math.max(selected.userData.minY, newPos.y);
             }
         }
 
-        // Cannon se encarga del resto: las demás piezas y las paredes
-        // (incluida el panel perforado) responden al mover la pieza kinematic.
+        // ─── Colisión: clasificador (AABB) + room bounds ────────
+        newPos = clampMovement(newPos, selected.position);
+
+        // Cannon resuelve colisiones contra otras piezas dinámicas
         physicsSystem.setKinematicPosition(selected, newPos);
         selected.position.copy(newPos);
     }
 
     function onPointerUp() {
         if (selected) {
-            // Al soltar: volver a dinámico. Cannon ahora aplica gravedad y
-            // todas las fuerzas de contacto correspondientes → si la pieza
-            // estaba sobre otra (cono, pirámide, etc.), se cae y rueda como
-            // en la vida real.
             physicsSystem.setKinematic(selected, false);
-            // Forzar sincronización body ≈ mesh final
             const body = selected.userData.body;
             if (body) {
                 body.position.set(selected.position.x, selected.position.y, selected.position.z);
@@ -138,10 +270,6 @@ export function setupDragManager(activeCameraRef, renderer, {
     return {
         getSelected: () => selected,
 
-        /**
-         * Mueve la pieza seleccionada mediante teclado (flechas) en modo kinematic.
-         * Cannon resuelve colisiones de las demás piezas contra esta.
-         */
         moveSelectedBy(dx, dz) {
             if (!selected) return;
             const pos = selected.position.clone();
@@ -156,8 +284,10 @@ export function setupDragManager(activeCameraRef, renderer, {
                 }
             }
 
-            physicsSystem.setKinematicPosition(selected, pos);
-            selected.position.copy(pos);
+            const clamped = clampMovement(pos, selected.position);
+
+            physicsSystem.setKinematicPosition(selected, clamped);
+            selected.position.copy(clamped);
         },
 
         dispose() {

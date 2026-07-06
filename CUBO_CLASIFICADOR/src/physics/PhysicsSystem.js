@@ -51,8 +51,15 @@ export function createPhysicsSystem(piecesGroup, bodyFactory, physicsWorld, clas
 
     /**
      * Usado por DragManager: mueve la pieza kinematic a una posición.
-     * Cannon calcula velocity/angularVelocity internamente para que
-     * las piezas que estaban apoyadas no peguen un salto.
+     *
+     * FIX (Opción A — simple y realista): además de setear body.position,
+     * se deriva body.velocity a partir del desplazamiento / dt para que
+     * cannon detecte el "barrido" del cuerpo entre frames y empuje
+     * correctamente a las piezas dinámicas vecinas (sin atravesarlas).
+     *
+     * No hace falta ningún step extra: el step normal del frame alcanza
+     * para que el solver resuelva los contactos. La pieza kinematic se
+     * comporta como en la vida real — empuja lo que toca, no lo atraviesa.
      *
      * @param {THREE.Mesh} mesh
      * @param {THREE.Vector3} pos
@@ -60,8 +67,34 @@ export function createPhysicsSystem(piecesGroup, bodyFactory, physicsWorld, clas
     function setKinematicPosition(mesh, pos) {
         const body = bodyFactory.getBody(mesh);
         if (!body) return;
+
+        const oldX = body.position.x;
+        const oldY = body.position.y;
+        const oldZ = body.position.z;
+
         body.position.set(pos.x, pos.y, pos.z);
-        // No tocamos quaternion en drag (la pieza queda en su orientación actual)
+
+        // dt de referencia para derivar velocidad: timestep fijo del mundo.
+        // Consistente con fixedStep(1/60) que usa el step principal.
+        const dt = 1 / 60;
+
+        body.velocity.set(
+            (pos.x - oldX) / dt,
+            (pos.y - oldY) / dt,
+            (pos.z - oldZ) / dt,
+        );
+        body.angularVelocity.setZero();
+
+        body.wakeUp();
+
+        // Despertar piezas dinámicas vecinas que estén dormidas, para que
+        // reaccionen al empujón (cannon las deja dormir si están quietas).
+        for (const child of piecesGroup.children) {
+            if (!child.isMesh || child === mesh) continue;
+            const other = bodyFactory.getBody(child);
+            if (!other) continue;
+            other.wakeUp();
+        }
     }
 
     // ─── Succion del hueco ──────────────────────────────────────
@@ -98,7 +131,7 @@ export function createPhysicsSystem(piecesGroup, bodyFactory, physicsWorld, clas
             applyHoleSuction(child);
         }
 
-        // 2. Avanzar el mundo cannon
+        // 2. Avanzar el mundo cannon (un único step por frame)
         physicsWorld.step(dt);
 
         // 3. Sincronizar body → mesh para piezas dinámicas (no kinematic)
