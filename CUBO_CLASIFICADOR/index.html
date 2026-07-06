@@ -12,7 +12,8 @@
 {
     "imports": {
         "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
-        "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+        "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/",
+        "cannon-es": "https://unpkg.com/cannon-es@0.20.0/dist/cannon-es.js"
     }
 }
 </script>
@@ -37,26 +38,26 @@
   <div id="obj-buttons"></div>
 
   <h3>Material</h3>
-  <button class="matbtn" data-mat="lambert">Lambert (mate, sin brillo)</button>
-  <button class="matbtn" data-mat="phong">Phong (brillo especular)</button>
-  <button class="matbtn" data-mat="standard">Standard (PBR realista)</button>
+  <button class="btn matbtn" data-mat="lambert">Lambert (mate, sin brillo)</button>
+  <button class="btn matbtn" data-mat="phong">Phong (brillo especular)</button>
+  <button class="btn matbtn" data-mat="standard">Standard (PBR realista)</button>
 
   <h3>Textura procedural</h3>
   <div>
-    <span class="texbtn" data-tex="none">Ninguna</span>
-    <span class="texbtn" data-tex="stripes">Rayas</span>
-    <span class="texbtn" data-tex="dots">Lunares</span>
-    <span class="texbtn" data-tex="gradient">Degradado</span>
-    <span class="texbtn" data-tex="wood">Madera</span>
+    <span class="btn texbtn" data-tex="none">Ninguna</span>
+    <span class="btn texbtn" data-tex="stripes">Rayas</span>
+    <span class="btn texbtn" data-tex="dots">Lunares</span>
+    <span class="btn texbtn" data-tex="gradient">Degradado</span>
+    <span class="btn texbtn" data-tex="wood">Madera</span>
   </div>
 
   <h3>Wireframe</h3>
-  <div class="wfbtn" id="wf-btn">Wireframe: OFF</div>
+  <div class="btn wfbtn" id="wf-btn">Wireframe: OFF</div>
 
   <h3>Proyección de cámara</h3>
   <div class="projrow">
-    <div class="projbtn active" id="proj-persp">Perspectiva</div>
-    <div class="projbtn" id="proj-ortho">Ortográfica</div>
+    <div class="btn projbtn active" id="proj-persp">Perspectiva</div>
+    <div class="btn projbtn" id="proj-ortho">Ortográfica</div>
   </div>
 
   <h3>Luces (3)</h3>

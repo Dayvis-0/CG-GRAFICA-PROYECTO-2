@@ -13,6 +13,8 @@ import { setupDragManager }     from './controls/DragManager.js';
 import { setupInterface }       from './ui/Interface.js';
 import { setupResize }          from './utils/ResizeHandler.js';
 import { setupAnimationLoop }   from './animations/AnimationLoop.js';
+import { createPhysicsWorld }   from './physics/PhysicsWorld.js';
+import { createBodyFactory }    from './physics/BodyFactory.js';
 import { createPhysicsSystem }  from './physics/PhysicsSystem.js';
 import { createClassifierRules } from './game/ClassifierRules.js';
 
@@ -53,23 +55,47 @@ const draggingRef = { current: false };
 // 11. Reglas del juego (qué pieza va en qué hueco)
 const classifierRules = createClassifierRules(panel);
 
-// 12. Obstáculos para colisiones (cámara + piezas)
+// ─── FÍSICAS (cannon-es) ──────────────────────────────────────────
+// 12. Mundo de físicas con gravedad y materiales de colisión
+const physicsWorld = createPhysicsWorld();
+
+// 13. Fábrica de cuerpos rígidos (mapea meshes Three ↔ bodies Cannon)
+const bodyFactory = createBodyFactory(physicsWorld.world, physicsWorld.materials);
+
+// 14. Registrar cuerpos estáticos: piso del cuarto, paredes y panel perforado
+//     El panel usa Trimesh para respetar los huecos (las piezas caen por ellos).
+const roomFloorMesh = room.children.find(c => c.isMesh); // primer hijo = piso
+bodyFactory.registerStatic(roomFloorMesh, 'ground');
+
+for (const wall of walls) {
+    bodyFactory.registerStatic(wall, 'wall');
+}
+bodyFactory.registerStatic(panel, 'panel');
+
+// 15. Registrar piezas como cuerpos dinámicos con masa
+for (const piece of pieces.children) {
+    if (!piece.isMesh) continue;
+    bodyFactory.registerPiece(piece, 1.0);
+}
+
+// 16. Sistema de físicas: step + sincronizar meshes
+const physicsSystem = createPhysicsSystem(pieces, bodyFactory, physicsWorld, classifierRules);
+
+// 17. Obstáculos para colisiones de cámara (sigue siendo AABB: la cámara es puntual)
 const obstacles = [...walls, panel, ...pieces.children.filter(c => c.isMesh)];
 
-// 13. Control FPS (WASD + mouse look + confinado al cuarto + obstáculos)
+// 18. Control FPS (WASD + mouse look + confinado al cuarto + obstáculos)
 const fpsControl = setupCameraFPS(cam, renderer, room.userData.bounds, obstacles, draggingRef, inputManager);
 
-// 14. Físicas (gravedad, estabilidad, empuje)
-const physicsSystem = createPhysicsSystem(pieces, [...walls, panel], classifierRules);
-
-// 15. Drag de piezas con colisiones
+// 19. Ref activa de cámara (para que DragManager use la cámara actual)
 const activeCameraRef = { current: cam };
 
+// 20. Drag de piezas (cinemático en cannon, dinámico al soltar)
 let interfaceCtrl;
 const dragManager = setupDragManager(activeCameraRef, renderer, {
     piecesGroup: pieces,
-    classifierMeshes: [...walls, panel],
     classifierRules,
+    physicsSystem,
     onSelect: (mesh) => {
         if (interfaceCtrl) interfaceCtrl.onPieceSelected(mesh);
     },
@@ -77,17 +103,17 @@ const dragManager = setupDragManager(activeCameraRef, renderer, {
     onDragEnd:   () => { draggingRef.current = false; },
 });
 
-// 16. Interfaz de usuario (HUD + panel)
+// 21. Interfaz de usuario (HUD + panel)
 interfaceCtrl = setupInterface({
     piecesGroup: pieces,
     buildMaterial,
     lights,
 });
 
-// 17. Responsive
+// 22. Responsive
 setupResize(cam, renderer);
 
-// 18. Bucle de renderizado con físicas + input + comportamiento polimórfico
+// 23. Bucle de renderizado con físicas + input
 setupAnimationLoop({
     scene,
     renderer,

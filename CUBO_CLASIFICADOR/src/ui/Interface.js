@@ -3,7 +3,7 @@
  * (Modo FPS: solo cámara perspectiva, proyección fija)
  *
  * Responsabilidad ÚNICA: manejar la interfaz DOM (HUD + panel).
- * Ya no escucha teclado — eso vive en InputManager + AnimationLoop.
+ * No escucha teclado — eso vive en InputManager + AnimationLoop.
  */
 export function setupInterface({
     piecesGroup,
@@ -88,6 +88,18 @@ export function setupInterface({
         updatePanelSelection();
     }
 
+    // ── Helper genérico para cambios de estado del material ─────
+    // Reemplaza el patrón repetitivo de matbtn / texbtn / wfbtn.
+    // Acepta un valor directo o una función (prev => next) para toggles.
+    function onStateChange(propKey, valueOrFn) {
+        if (!selectedKey) return;
+        const st = getMeshState();
+        st.state[propKey] = typeof valueOrFn === 'function'
+            ? valueOrFn(st.state[propKey])
+            : valueOrFn;
+        rebuildMaterial();
+    }
+
     // ─── SELECCIÓN ──────────────────────────────
 
     // 1) Callback desde DragManager (click en 3D)
@@ -113,39 +125,24 @@ export function setupInterface({
     piecesGroup.children.forEach(c => {
         if (!c.isMesh) return;
         const btn = document.createElement('span');
-        btn.className = 'objbtn';
+        btn.className = 'btn objbtn';
         btn.textContent = c.userData.label;
         btn.dataset.key = c.userData.label;
         btn.onclick = () => selectByLabel(c.userData.label);
         btnContainer.appendChild(btn);
     });
 
-    // ─── PANEL: Material ────────────────────────
+    // ─── PANEL: Material / Textura / Wireframe (DRY via onStateChange) ──
     document.querySelectorAll('.matbtn').forEach(btn => {
-        btn.onclick = () => {
-            if (!selectedKey) return;
-            const st = getMeshState();
-            st.state.material = btn.dataset.mat;
-            rebuildMaterial();
-        };
+        btn.onclick = () => onStateChange('material', btn.dataset.mat);
     });
 
-    // ─── PANEL: Textura ─────────────────────────
     document.querySelectorAll('.texbtn').forEach(btn => {
-        btn.onclick = () => {
-            if (!selectedKey) return;
-            const st = getMeshState();
-            st.state.texture = btn.dataset.tex;
-            rebuildMaterial();
-        };
+        btn.onclick = () => onStateChange('texture', btn.dataset.tex);
     });
 
-    // ─── PANEL: Wireframe ───────────────────────
     document.getElementById('wf-btn').onclick = () => {
-        if (!selectedKey) return;
-        const st = getMeshState();
-        st.state.wireframe = !st.state.wireframe;
-        rebuildMaterial();
+        onStateChange('wireframe', prev => !prev);
     };
 
     // ─── PANEL: Proyección (FPS fijo) ───────────

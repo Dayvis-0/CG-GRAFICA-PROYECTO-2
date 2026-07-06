@@ -1,22 +1,27 @@
+import { attachAnimations } from './pieceAnimations.js';
+
 /**
  * Bucle de renderizado con físicas y comportamiento polimórfico por pieza.
  *
  * Responsabilidades:
  * 1. Avanzar el control FPS
- * 2. Ejecutar físicas (delegado a PhysicsSystem)
+ * 2. Step + sincronizar físicas (delegado a PhysicsSystem que usa cannon-es)
  * 3. Mover pieza seleccionada con flechas (desde InputManager)
- * 4. Ejecutar update() polimórfico de cada pieza (evita ifs por tipo)
+ * 4. Update polimórfico de cada pieza (delegado a pieceAnimations)
  * 5. Renderizar
+ *
+ * El bucle NO sabe qué piezas existen ni cómo animarlas — eso vive en
+ * pieceAnimations.js. Cada pieza expone su propio update().
  *
  * @param {object} opts
  * @param {THREE.Scene}           opts.scene
  * @param {THREE.WebGLRenderer}   opts.renderer
  * @param {{ current: THREE.Camera }} opts.activeCameraRef
- * @param {{ update: function }}   opts.fpsControl
+ * @param {{ update: function, dispose: function }}   opts.fpsControl
  * @param {THREE.Group}           opts.pieces
- * @param {object}                opts.physicsSystem   — { update(draggedMesh) }
- * @param {object}                opts.inputManager    — { isDown(key) }
- * @param {object}                opts.dragManager     — { getSelected(), moveSelectedBy(dx, dz) }
+ * @param {object}                opts.physicsSystem
+ * @param {object}                opts.inputManager
+ * @param {object}                opts.dragManager
  */
 export function setupAnimationLoop({
     scene,
@@ -28,45 +33,26 @@ export function setupAnimationLoop({
     inputManager,
     dragManager,
 }) {
-    // ─── Comportamiento polimórfico por pieza ────────────────────
-    // En lugar de if (label === 'Esfera') en el loop, cada pieza
-    // expone su propio update(). Mañana agregar otra animación es
-    // tan simple como setear child.userData.update = fn.
-
-    for (const child of pieces.children) {
-        if (!child.isMesh) continue;
-
-        switch (child.userData.label) {
-            case 'Esfera':
-                child.userData.update = function sphereUpdate(mesh, isDragged) {
-                    if (isDragged) return;
-                    const prevX = mesh.userData.prevX ?? mesh.position.x;
-                    const prevZ = mesh.userData.prevZ ?? mesh.position.z;
-                    const dx = mesh.position.x - prevX;
-                    const dz = mesh.position.z - prevZ;
-                    mesh.rotation.x -= dz * 3;
-                    mesh.rotation.z += dx * 3;
-                    mesh.userData.prevX = mesh.position.x;
-                    mesh.userData.prevZ = mesh.position.z;
-                };
-                break;
-            // Futuras piezas con comportamiento propio se agregan acá
-            // case 'Cubo': child.userData.update = ...
-        }
-    }
+    // Vincular comportamientos de animación por tipo de pieza
+    attachAnimations(pieces);
 
     // ─── Bucle ────────────────────────────────────────────────────
 
-    function animate() {
+    let lastTime = performance.now();
+
+    function animate(now) {
         requestAnimationFrame(animate);
+
+        const dt = Math.min((now - lastTime) / 1000, 1 / 30);
+        lastTime = now;
 
         // 1. Movimiento FPS (WASD + mouse look)
         fpsControl.update();
 
         const draggedMesh = dragManager.getSelected();
 
-        // 2. Físicas (gravedad, estabilidad, empuje)
-        physicsSystem.update(draggedMesh);
+        // 2. Físicas (cannon-es step + sincronizar meshes)
+        physicsSystem.update(dt, draggedMesh);
 
         // 3. Movimiento con flechas (polling desde InputManager)
         if (draggedMesh) {
@@ -77,7 +63,7 @@ export function setupAnimationLoop({
             if (inputManager.isDown('ArrowRight')) dragManager.moveSelectedBy( step,  0);
         }
 
-        // 4. Update polimórfico por pieza (rotación de esfera, etc.)
+        // 4. Update polimórfico por pieza (delegado a pieceAnimations)
         for (const child of pieces.children) {
             if (child.userData.update) {
                 child.userData.update(child, child === draggedMesh);
@@ -88,5 +74,5 @@ export function setupAnimationLoop({
         renderer.render(scene, activeCameraRef.current);
     }
 
-    animate();
+    animate(performance.now());
 }

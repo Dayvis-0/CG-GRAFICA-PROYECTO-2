@@ -2,8 +2,9 @@ import * as THREE from 'three';
 
 /**
  * Control de cámara en primera persona (FPS).
- * - El estado del teclado (WASD) y pointer lock se lee de InputManager.
+ * - El estado del teclado y pointer lock se lee de InputManager.
  * - El mouse look (yaw/pitch) se maneja acá por ser propio de la cámara.
+ * - El pointerlockchange NO se duplica: InputManager ya lo trackea.
  *
  * @param {THREE.PerspectiveCamera} camera
  * @param {THREE.WebGLRenderer} renderer
@@ -21,27 +22,20 @@ export function setupCameraFPS(camera, renderer, roomBounds, obstacles = [], dra
     // Estado de rotación (exclusivo de la cámara)
     let yaw = 0;
     let pitch = 0;
-    let isLocked = false;
-
-    // ─── Pointer Lock ─────────────────────────────────────────────
-
-    document.addEventListener('pointerlockchange', () => {
-        isLocked = inputManager.isPointerLocked();
-        renderer.domElement.style.cursor = isLocked ? 'none' : 'default';
-    });
 
     // Click en canvas → bloquear mouse para control de cámara
     const el = renderer.domElement;
-    el.addEventListener('click', () => {
-        if (!isLocked && !draggingRef.current) {
+    const onCanvasClick = () => {
+        if (!inputManager.isPointerLocked() && !draggingRef.current) {
             el.requestPointerLock();
         }
-    });
+    };
+    el.addEventListener('click', onCanvasClick);
 
     // ─── Mouse look ──────────────────────────────────────────────
 
-    document.addEventListener('mousemove', (e) => {
-        if (!isLocked || draggingRef.current) return;
+    const _onMouseMove = (e) => {
+        if (!inputManager.isPointerLocked() || draggingRef.current) return;
 
         yaw -= e.movementX * 0.003;
         pitch -= e.movementY * 0.003;
@@ -50,7 +44,8 @@ export function setupCameraFPS(camera, renderer, roomBounds, obstacles = [], dra
         pitch = Math.max(-maxPitch, Math.min(maxPitch, pitch));
 
         updateCameraRotation();
-    });
+    };
+    document.addEventListener('mousemove', _onMouseMove);
 
     // ─── Rotación ────────────────────────────────────────────────
 
@@ -130,8 +125,17 @@ export function setupCameraFPS(camera, renderer, roomBounds, obstacles = [], dra
         updateMovement();
     }
 
+    // ─── Dispose ─────────────────────────────────────────────────
+
+    function dispose() {
+        el.removeEventListener('click', onCanvasClick);
+        document.removeEventListener('mousemove', _onMouseMove);
+    }
+
+    // ─── Inicializar ─────────────────────────────────────────────
+
     updateCameraRotation();
     camera.position.set(5, 1.6, 5);
 
-    return { update };
+    return { update, dispose };
 }

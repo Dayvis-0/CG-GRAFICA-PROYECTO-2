@@ -1,167 +1,129 @@
 import * as THREE from 'three';
-import { sweepMove } from '../utils/collision.js';
-
-// ── Constantes físicas ──
-const GRAVITY_ACCEL = 0.008;
-const PUSH_SPEED = 0.025;
-
-// Reusables (evitar allocs en cada frame)
-const _stabilityRay = new THREE.Raycaster();
-const _stabilityBox = new THREE.Box3();
-const _corner = new THREE.Vector3();
-const _stabilityDir = new THREE.Vector3(0, -1, 0);
-const _boxA = new THREE.Box3();
-const _boxB = new THREE.Box3();
+import * as CANNON from 'cannon-es';
 
 /**
- * Sistema de físicas independiente: gravedad, estabilidad y empuje.
- * No sabe de drag, no sabe de UI — solo de piezas y obstáculos.
+ * Sistema de físicas basado en cannon-es.
+ * Responsabilidad ÚNICA: por frame, step el mundo y sincronizar los meshes
+ * de Three con sus cuerpos de cannon. Maneja el modo kinematic (drag) y el
+ * modo dinámico (decaen por gravedad, chocan y vuelcan).
  *
- * @param {THREE.Group}           piecesGroup      — grupo con las piezas
- * @param {THREE.Mesh[]}          classifierMeshes — paredes + panel del clasificador
- * @param {object}                classifierRules  — { shouldIgnoreCollision(mesh, obstacle) }
+ * Ya no implementa lógica de "estabilidad ni empuje" a mano — eso lo hace
+ * cannon-es internamente con su solver de contactos.
+ *
+ * @param {THREE.Group} piecesGroup      — grupo con los meshes de las piezas
+ * @param {object}       bodyFactory      — { getBody(mesh) }
+ * @param {object}       physicsWorld     — { step(dt) }
+ * @param {object}       classifierRules  — { isOverOwnHole(mesh) } (lector de succion del hueco)
  */
-export function createPhysicsSystem(piecesGroup, classifierMeshes, classifierRules) {
+export function createPhysicsSystem(piecesGroup, bodyFactory, physicsWorld, classifierRules) {
+    /** @type {Set<THREE.Mesh>} */
+    const kinematicPieces = new Set();
 
-    function getObstacles(exclude) {
-        const pieces = piecesGroup.children.filter(c => c.isMesh && c !== exclude);
-        return [...pieces, ...classifierMeshes];
-    }
-
-    // ─── Estabilidad ──────────────────────────────────────────────
-
-    function isStable(mesh) {
-        const obstacles = getObstacles(mesh);
-        if (obstacles.length === 0) return true;
-
-        _stabilityBox.setFromObject(mesh);
-        const mn = _stabilityBox.min;
-        const mx = _stabilityBox.max;
-
-        const corners = [
-            [mn.x, mn.z], [mx.x, mn.z],
-            [mn.x, mx.z], [mx.x, mx.z],
-        ];
-
-        let supported = 0;
-        for (const [cx, cz] of corners) {
-            _corner.set(cx, mn.y + 0.15, cz);
-            _stabilityRay.set(_corner, _stabilityDir);
-            _stabilityRay.far = 0.35;
-            const hits = _stabilityRay.intersectObjects(obstacles, false);
-            if (hits.length > 0 && hits[0].distance > 0.01) supported++;
-        }
-        return supported >= 3;
-    }
-
-    // ─── Dirección de empuje ─────────────────────────────────────
-
-    function computePushDirection(mesh) {
-        const obstacles = getObstacles(mesh);
-        _stabilityBox.setFromObject(mesh);
-        const mn = _stabilityBox.min;
-        const mx = _stabilityBox.max;
-        const cx = (mn.x + mx.x) / 2;
-        const cz = (mn.z + mx.z) / 2;
-
-        const corners = [
-            { x: mn.x, z: mn.z }, { x: mx.x, z: mn.z },
-            { x: mn.x, z: mx.z }, { x: mx.x, z: mx.z },
-        ];
-
-        let pushX = 0, pushZ = 0, count = 0;
-        for (const c of corners) {
-            _corner.set(c.x, mn.y + 0.15, c.z);
-            _stabilityRay.set(_corner, _stabilityDir);
-            _stabilityRay.far = 0.35;
-            const hits = _stabilityRay.intersectObjects(obstacles, false);
-            if (hits.length === 0 || hits[0].distance <= 0.01) {
-                pushX += c.x - cx;
-                pushZ += c.z - cz;
-                count++;
-            }
-        }
-
-        if (count > 0 && count < 3) {
-            const len = Math.sqrt(pushX * pushX + pushZ * pushZ);
-            if (len > 0.001) {
-                mesh.userData.pushX = pushX / len;
-                mesh.userData.pushZ = pushZ / len;
-                mesh.userData.unstable = true;
-            }
-        }
-    }
-
-    // ─── Física por pieza (gravedad + estabilidad + empuje) ──────
-
-    function applyPhysics(mesh) {
-        const minY = mesh.userData.minY;
-        if (!mesh.userData.unstable && mesh.position.y <= minY) return;
-
-        // Aceleración por gravedad
-        if (!mesh.userData.unstable) {
-            mesh.userData.velY = (mesh.userData.velY || 0) + GRAVITY_ACCEL;
-        }
-
-        const targetPos = mesh.position.clone();
-
-        // Caída vertical
-        targetPos.y -= mesh.userData.velY || 0;
-
-        // Empuje horizontal si inestable
-        if (mesh.userData.unstable) {
-            targetPos.x += (mesh.userData.pushX || 0) * PUSH_SPEED;
-            targetPos.z += (mesh.userData.pushZ || 0) * PUSH_SPEED;
-        }
-
-        // Mover con colisiones, delegando reglas de juego
-        sweepMove(mesh, targetPos, getObstacles(mesh),
-            (m, ob) => classifierRules.shouldIgnoreCollision(m, ob));
-
-        // Si estaba inestable y se detuvo, re-evaluar
-        if (mesh.userData.unstable) {
-            const stopped = mesh.position.distanceTo(targetPos) < 0.001
-                || mesh.position.y <= minY + 0.01;
-            if (stopped) {
-                if (isStable(mesh) || mesh.position.y <= minY + 0.01) {
-                    mesh.userData.unstable = false;
-                    mesh.userData.pushX = 0;
-                    mesh.userData.pushZ = 0;
-                    if (mesh.position.y <= minY) mesh.userData.velY = 0;
-                }
-            }
-            return;
-        }
-
-        // Recién asentado → verificar estabilidad
-        if (mesh.position.y <= minY + 0.01) {
-            mesh.userData.velY = 0;
-            if (!isStable(mesh)) {
-                computePushDirection(mesh);
-            }
-        }
-    }
-
-    // ─── Update por frame ────────────────────────────────────────
+    // ─── Modo kinematic (drag) ──────────────────────────────────
 
     /**
-     * Ejecuta la física para todas las piezas (excepto la que se arrastra).
-     * @param {THREE.Mesh|null} draggedMesh — pieza agarrada por el mouse (se salta)
+     * Pone una pieza en modo kinematic: cannon no aplica gravedad sobre ella
+     * pero otras piezas dinámicas chocan contra ella. La posición es
+     * controlada por el DragManager vía setKinematicPosition.
+     *
+     * @param {THREE.Mesh} mesh
+     * @param {boolean}    kinematic
      */
-    function update(draggedMesh) {
-        for (const child of piecesGroup.children) {
-            if (!child.isMesh) continue;
+    function setKinematic(mesh, kinematic) {
+        const body = bodyFactory.getBody(mesh);
+        if (!body) return;
 
-            // La pieza arrastrada no recibe físicas
-            if (child === draggedMesh) {
-                child.userData.velY = 0;
-                child.userData.unstable = false;
-                continue;
-            }
-
-            applyPhysics(child);
+        if (kinematic) {
+            body.type = CANNON.Body.KINEMATIC;
+            body.velocity.setZero();
+            body.angularVelocity.setZero();
+            body.wakeUp();
+            kinematicPieces.add(mesh);
+        } else {
+            // Al soltar: vuelve a dinámico, con velocidad cero para que
+            // la gravedad tome el control gradualmente
+            body.type = CANNON.Body.DYNAMIC;
+            body.velocity.setZero();
+            body.angularVelocity.setZero();
+            body.wakeUp();
+            kinematicPieces.delete(mesh);
         }
     }
 
-    return { update };
+    /**
+     * Usado por DragManager: mueve la pieza kinematic a una posición.
+     * Cannon calcula velocity/angularVelocity internamente para que
+     * las piezas que estaban apoyadas no peguen un salto.
+     *
+     * @param {THREE.Mesh} mesh
+     * @param {THREE.Vector3} pos
+     */
+    function setKinematicPosition(mesh, pos) {
+        const body = bodyFactory.getBody(mesh);
+        if (!body) return;
+        body.position.set(pos.x, pos.y, pos.z);
+        // No tocamos quaternion en drag (la pieza queda en su orientación actual)
+    }
+
+    // ─── Succion del hueco ──────────────────────────────────────
+    // Cuando una pieza dinámica está justo sobre el hueco correcto a la altura
+    // del panel, le damos un pequeño empuje hacia abajo para "enganchearla".
+    // (Cannon no tiene forma nativa de saber qué pieza "debería" caer por un
+    // hueco — esa es la regla del juego, no física pura).
+
+    function applyHoleSuction(mesh) {
+        if (!classifierRules || !classifierRules.isOverOwnHole) return;
+        if (kinematicPieces.has(mesh)) return;
+
+        // Si la pieza está cayendo y pasa cerca del hueco correcto, succionar
+        if (classifierRules.isOverOwnHole(mesh)) {
+            const body = bodyFactory.getBody(mesh);
+            if (!body) return;
+            // Sólo succionar si está descendiendo y cerca de la altura del panel
+            if (body.position.y < 3.2 && body.velocity.y < 0.5) {
+                body.velocity.y = -3.5; // empuje hacia abajo para que caiga por el hueco
+            }
+        }
+    }
+
+    // ─── Update por frame ───────────────────────────────────────
+
+    /**
+     * Avanza la simulación copiando mesh ≈ body para todas las piezas dinámicas.
+     * @param {number} dt
+     * @param {THREE.Mesh|null} draggedMesh — pieza kinematic; no se sincroniza desde acá
+     */
+    function update(dt, draggedMesh) {
+        // 1. Aplicar succion del hueco a piezas dinámicas
+        for (const child of piecesGroup.children) {
+            if (!child.isMesh || child === draggedMesh) continue;
+            applyHoleSuction(child);
+        }
+
+        // 2. Avanzar el mundo cannon
+        physicsWorld.step(dt);
+
+        // 3. Sincronizar body → mesh para piezas dinámicas (no kinematic)
+        for (const child of piecesGroup.children) {
+            if (!child.isMesh) continue;
+            if (child === draggedMesh) continue; // kinematic: ya lo movió DragManager
+
+            const body = bodyFactory.getBody(child);
+            if (!body) continue;
+
+            child.position.set(body.position.x, body.position.y, body.position.z);
+            child.quaternion.set(
+                body.quaternion.x,
+                body.quaternion.y,
+                body.quaternion.z,
+                body.quaternion.w
+            );
+        }
+    }
+
+    return {
+        update,
+        setKinematic,
+        setKinematicPosition,
+    };
 }

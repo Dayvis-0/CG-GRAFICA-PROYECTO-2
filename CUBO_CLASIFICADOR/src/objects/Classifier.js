@@ -67,46 +67,28 @@ export function createClassifier() {
     group.add(floor);
     walls.push(floor);
 
-    // --- 2-5. Paredes laterales ---
-    const front = new THREE.Mesh(
-        new THREE.BoxGeometry(OUTER, WALL_HEIGHT, WALL_THICK),
-        WALL_MAT
-    );
-    front.position.set(0, WALL_HEIGHT / 2, MID - WALL_THICK / 2);
-    front.castShadow = true;
-    front.receiveShadow = true;
-    group.add(front);
-    walls.push(front);
+    // --- 2-5. Paredes laterales (loop: front, back, left, right) ---
+    // Cada config tiene { w, h, d } para el Box y { x, y, z } para la posición
+    const W = OUTER, H = WALL_HEIGHT, T = WALL_THICK;
+    const halfGap = MID - T / 2;
+    const wallConfigs = [
+        { size: [W, H, T], pos: [0,     H / 2,  halfGap] }, // front
+        { size: [W, H, T], pos: [0,     H / 2, -halfGap] }, // back
+        { size: [T, H, W], pos: [-halfGap, H / 2,  0] },    // left
+        { size: [T, H, W], pos: [ halfGap, H / 2,  0] },    // right
+    ];
 
-    const back = new THREE.Mesh(
-        new THREE.BoxGeometry(OUTER, WALL_HEIGHT, WALL_THICK),
-        WALL_MAT
-    );
-    back.position.set(0, WALL_HEIGHT / 2, -(MID - WALL_THICK / 2));
-    back.castShadow = true;
-    back.receiveShadow = true;
-    group.add(back);
-    walls.push(back);
-
-    const left = new THREE.Mesh(
-        new THREE.BoxGeometry(WALL_THICK, WALL_HEIGHT, OUTER),
-        WALL_MAT
-    );
-    left.position.set(-(MID - WALL_THICK / 2), WALL_HEIGHT / 2, 0);
-    left.castShadow = true;
-    left.receiveShadow = true;
-    group.add(left);
-    walls.push(left);
-
-    const right = new THREE.Mesh(
-        new THREE.BoxGeometry(WALL_THICK, WALL_HEIGHT, OUTER),
-        WALL_MAT
-    );
-    right.position.set(MID - WALL_THICK / 2, WALL_HEIGHT / 2, 0);
-    right.castShadow = true;
-    right.receiveShadow = true;
-    group.add(right);
-    walls.push(right);
+    for (const cfg of wallConfigs) {
+        const wall = new THREE.Mesh(
+            new THREE.BoxGeometry(...cfg.size),
+            WALL_MAT
+        );
+        wall.position.set(...cfg.pos);
+        wall.castShadow = true;
+        wall.receiveShadow = true;
+        group.add(wall);
+        walls.push(wall);
+    }
 
     // --- 6. Panel superior con huecos ---
     const panel = buildTopPanel();

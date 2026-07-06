@@ -1,28 +1,26 @@
 import * as THREE from 'three';
-import { sweepMove } from '../utils/collision.js';
-
-const STEP_SIZE = 0.04;
 
 /**
  * Maneja exclusivamente el ARRASTRE de piezas con el mouse.
- * - No sabe de físicas (gravedad, estabilidad, empuje).
- * - No sabe de reglas del juego.
- * - Delega colisiones a utils/collision.js y reglas a ClassifierRules.
+ * - No implementa colisiones AABB a mano: cannon-es resuelve las colisiones
+ *   automáticamente entre la pieza kinematic y los demás cuerpos.
+ * - Respeto del hueco: si el cursor deja la pieza sobre su hueco correcto,
+ *   permitimos que baje dentro (no la frenamos en Y = minY).
  *
  * @param {{ current: THREE.Camera }} activeCameraRef
  * @param {THREE.WebGLRenderer}       renderer
  * @param {object}                    opts
  * @param {THREE.Group}               opts.piecesGroup
- * @param {THREE.Mesh[]}              opts.classifierMeshes
- * @param {object}                    opts.classifierRules   — { shouldIgnoreCollision(mesh, obstacle) }
- * @param {function}                  opts.onSelect          — (mesh | null) => void
- * @param {function}                  opts.onDragStart       — () => void
- * @param {function}                  opts.onDragEnd         — () => void
+ * @param {object}                    opts.classifierRules   — { isOverOwnHole(mesh) }
+ * @param {object}                    opts.physicsSystem      — { setKinematic, setKinematicPosition }
+ * @param {function}                  opts.onSelect           — (mesh | null) => void
+ * @param {function}                  opts.onDragStart         — () => void
+ * @param {function}                  opts.onDragEnd           — () => void
  */
 export function setupDragManager(activeCameraRef, renderer, {
     piecesGroup,
-    classifierMeshes,
     classifierRules,
+    physicsSystem,
     onSelect,
     onDragStart,
     onDragEnd,
@@ -46,11 +44,6 @@ export function setupDragManager(activeCameraRef, renderer, {
         return piecesGroup.children.filter(c => c.isMesh);
     }
 
-    function getObstacles(exclude) {
-        const pieces = getPieceMeshes().filter(p => p !== exclude);
-        return [...pieces, ...classifierMeshes];
-    }
-
     // ─── Eventos de puntero ───────────────────────────────────────
 
     function onPointerDown(e) {
@@ -70,14 +63,14 @@ export function setupDragManager(activeCameraRef, renderer, {
         if (onDragStart) onDragStart();
         notifySelect(selected);
 
-        // Al agarrar, limpia estado físico (la pieza deja de caer/deslizarse)
-        selected.userData.unstable = false;
-        selected.userData.pushX = 0;
-        selected.userData.pushZ = 0;
-        selected.userData.velY = 0;
+        // Modo kinematic: la pieza ya no recibe gravedad, pero sigue
+        // siendo un obstáculo para las demás.
+        physicsSystem.setKinematic(selected, true);
+        physicsSystem.setKinematicPosition(selected, selected.position);
 
         renderer.domElement.setPointerCapture(e.pointerId);
 
+        // Plano de arrastre paralelo a la cámara, pasando por el centro de la pieza
         activeCameraRef.current.getWorldDirection(camDir);
         dragPlane.setFromNormalAndCoplanarPoint(camDir, selected.position);
         raycaster.ray.intersectPlane(dragPlane, target);
@@ -97,17 +90,42 @@ export function setupDragManager(activeCameraRef, renderer, {
 
         const newPos = target.clone().sub(offset);
 
+        // Limite inferior: por defecto minY (no atraviesa el piso),
+        // PERO si está sobre su hueco correcto, permitimos bajarla
+        // dentro del clasificador (hasta y = 0.3 para que entre al cubo).
         if (selected.userData.minY !== undefined) {
-            newPos.y = Math.max(selected.userData.minY, newPos.y);
+            if (classifierRules.isOverOwnHole(selected)) {
+                // Sobre el hueco correcto: permitir bajar dentro del cubo
+                newPos.y = Math.max(0.3, newPos.y);
+            } else {
+                // Suelo normal
+                newPos.y = Math.max(selected.userData.minY, newPos.y);
+            }
         }
 
-        // Mover con colisiones + reglas del clasificador
-        sweepMove(selected, newPos, getObstacles(selected),
-            (m, ob) => classifierRules.shouldIgnoreCollision(m, ob));
+        // Cannon se encarga del resto: las demás piezas y las paredes
+        // (incluida el panel perforado) responden al mover la pieza kinematic.
+        physicsSystem.setKinematicPosition(selected, newPos);
+        selected.position.copy(newPos);
     }
 
     function onPointerUp() {
-        if (selected) selected = null;
+        if (selected) {
+            // Al soltar: volver a dinámico. Cannon ahora aplica gravedad y
+            // todas las fuerzas de contacto correspondientes → si la pieza
+            // estaba sobre otra (cono, pirámide, etc.), se cae y rueda como
+            // en la vida real.
+            physicsSystem.setKinematic(selected, false);
+            // Forzar sincronización body ≈ mesh final
+            const body = selected.userData.body;
+            if (body) {
+                body.position.set(selected.position.x, selected.position.y, selected.position.z);
+                body.velocity.setZero();
+                body.angularVelocity.setZero();
+                body.wakeUp();
+            }
+            selected = null;
+        }
         dragging = false;
         if (onDragEnd) onDragEnd();
         renderer.domElement.style.cursor = 'default';
@@ -122,19 +140,25 @@ export function setupDragManager(activeCameraRef, renderer, {
         getSelected: () => selected,
 
         /**
-         * Mueve la pieza seleccionada mediante teclado (flechas).
-         * Reusa la misma lógica de colisiones que el drag con mouse.
+         * Mueve la pieza seleccionada mediante teclado (flechas) en modo kinematic.
+         * Cannon resuelve colisiones de las demás piezas contra esta.
          */
         moveSelectedBy(dx, dz) {
             if (!selected) return;
             const pos = selected.position.clone();
             pos.x += dx;
             pos.z += dz;
+
             if (selected.userData.minY !== undefined) {
-                pos.y = Math.max(selected.userData.minY, pos.y);
+                if (classifierRules.isOverOwnHole(selected)) {
+                    pos.y = Math.max(0.3, pos.y);
+                } else {
+                    pos.y = Math.max(selected.userData.minY, pos.y);
+                }
             }
-            sweepMove(selected, pos, getObstacles(selected),
-                (m, ob) => classifierRules.shouldIgnoreCollision(m, ob));
+
+            physicsSystem.setKinematicPosition(selected, pos);
+            selected.position.copy(pos);
         },
 
         dispose() {

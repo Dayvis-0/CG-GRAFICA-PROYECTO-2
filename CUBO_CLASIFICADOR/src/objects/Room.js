@@ -58,39 +58,24 @@ export function createRoom({ size = 14, height = 8 } = {}) {
     ceiling.receiveShadow = true;
     group.add(ceiling);
 
-    // ── Paredes (4) ──
+    // ── Paredes (4: N, S, E, O) en loop ──
     const wallGeo = new THREE.PlaneGeometry(size, height);
+    // Cada config: { rotY, x, z }
+    const wallConfigs = [
+        { rotY: 0,           x: 0,    z: -half },  // north
+        { rotY: Math.PI,     x: 0,    z:  half },  // south
+        { rotY: -Math.PI / 2, x: half, z: 0 },     // east
+        { rotY:  Math.PI / 2, x: -half, z: 0 },    // west
+    ];
 
-    // Norte (z = -half)
-    const wallNorth = new THREE.Mesh(wallGeo, wallMat);
-    wallNorth.position.set(0, height / 2, -half);
-    wallNorth.castShadow = true;
-    wallNorth.receiveShadow = true;
-    group.add(wallNorth);
-
-    // Sur (z = +half) - rotada 180°
-    const wallSouth = new THREE.Mesh(wallGeo, wallMat);
-    wallSouth.position.set(0, height / 2, half);
-    wallSouth.rotation.y = Math.PI;
-    wallSouth.castShadow = true;
-    wallSouth.receiveShadow = true;
-    group.add(wallSouth);
-
-    // Este (x = +half) - rotada -90°
-    const wallEast = new THREE.Mesh(wallGeo, wallMat);
-    wallEast.position.set(half, height / 2, 0);
-    wallEast.rotation.y = -Math.PI / 2;
-    wallEast.castShadow = true;
-    wallEast.receiveShadow = true;
-    group.add(wallEast);
-
-    // Oeste (x = -half) - rotada +90°
-    const wallWest = new THREE.Mesh(wallGeo, wallMat);
-    wallWest.position.set(-half, height / 2, 0);
-    wallWest.rotation.y = Math.PI / 2;
-    wallWest.castShadow = true;
-    wallWest.receiveShadow = true;
-    group.add(wallWest);
+    for (const cfg of wallConfigs) {
+        const wall = new THREE.Mesh(wallGeo, wallMat);
+        wall.position.set(cfg.x, height / 2, cfg.z);
+        wall.rotation.y = cfg.rotY;
+        wall.castShadow = true;
+        wall.receiveShadow = true;
+        group.add(wall);
+    }
 
     // Guardar límites para colisión de cámara
     group.userData = {
