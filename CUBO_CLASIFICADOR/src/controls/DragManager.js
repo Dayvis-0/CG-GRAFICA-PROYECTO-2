@@ -121,7 +121,34 @@ export function setupDragManager(activeCameraRef, renderer, {
 
         pos.x = Math.max(-half + _offMin.x, Math.min(half - _offMax.x, pos.x));
         pos.z = Math.max(-half + _offMin.z, Math.min(half - _offMax.z, pos.z));
-        pos.y = Math.max(      _offMin.y, Math.min(h     - _offMax.y, pos.y));
+        // Y: sin piso (minY ya lo maneja), solo techo
+        pos.y = Math.min(h - _offMax.y, pos.y);
+
+        return pos;
+    }
+
+    // ─── Limitador de paso (anti-teleport) ──────────────────────────
+    /**
+     * Limita el desplazamiento en cada eje a la mitad del tamaño del
+     * AABB de la pieza. Así la pieza nunca puede "saltarse" una pared
+     * del clasificador moviéndose más rápido de lo que su propio cuerpo
+     * permite en un solo frame.
+     *
+     * @param {THREE.Vector3} pos  — posición deseada
+     * @param {THREE.Vector3} from — posición actual
+     * @returns {THREE.Vector3} — posición acotada
+     */
+    function limitStep(pos, from) {
+        _pieceBox.setFromObject(selected);
+        _pieceBox.getSize(_size);
+
+        const maxDx = _size.x * 0.5;
+        const maxDy = _size.y * 0.5;
+        const maxDz = _size.z * 0.5;
+
+        pos.x = Math.max(from.x - maxDx, Math.min(from.x + maxDx, pos.x));
+        pos.y = Math.max(from.y - maxDy, Math.min(from.y + maxDy, pos.y));
+        pos.z = Math.max(from.z - maxDz, Math.min(from.z + maxDz, pos.z));
 
         return pos;
     }
@@ -236,6 +263,11 @@ export function setupDragManager(activeCameraRef, renderer, {
                 newPos.y = Math.max(selected.userData.minY, newPos.y);
             }
         }
+
+        // ─── Límite de paso (anti-teleport) ────────────────────
+        // Evita que la pieza se salte una pared si el mouse/cámara
+        // se movieron muy rápido entre frames.
+        newPos = limitStep(newPos, selected.position);
 
         // ─── Colisión: clasificador (AABB) + room bounds ────────
         newPos = clampMovement(newPos, selected.position);
