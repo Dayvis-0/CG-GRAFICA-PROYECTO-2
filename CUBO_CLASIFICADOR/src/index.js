@@ -69,8 +69,8 @@ const bodyFactory = createBodyFactory(physicsWorld.world, physicsWorld.materials
 //     (son PlaneGeometry, el Box cannon queda muy delgado).
 for (const child of room.children) {
     if (!child.isMesh) continue;
-    const kind = (child.position.y < 0.5) ? 'ground' : 'wall';
-    bodyFactory.registerStatic(child, kind, { minThick: 0.8 });
+    const kind = (child.position.y < 0.5) ? 'ground' : 'room-wall';
+    bodyFactory.registerStatic(child, kind);
 }
 
 for (const wall of walls) {

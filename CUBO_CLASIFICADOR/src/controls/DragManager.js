@@ -297,14 +297,9 @@ export function setupDragManager(activeCameraRef, renderer, {
 
     function onPointerUp() {
         if (selected) {
+            // setKinematic(false) preserva la velocidad derivada del drag →
+            // caída inmediata y natural, sin efecto "hover".
             physicsSystem.setKinematic(selected, false);
-            const body = selected.userData.body;
-            if (body) {
-                body.position.set(selected.position.x, selected.position.y, selected.position.z);
-                body.velocity.setZero();
-                body.angularVelocity.setZero();
-                body.wakeUp();
-            }
             selected = null;
         }
         dragging = false;

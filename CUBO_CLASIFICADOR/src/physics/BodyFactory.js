@@ -111,6 +111,7 @@ export function createBodyFactory(world, materials) {
      * Material cannon según tipo de cuerpo (para ContactMaterial correcto).
      */
     function materialForKind(kind) {
+        if (kind === 'room-wall') return materials.wall;
         return materials[kind] || materials.piece;
     }
 
@@ -175,8 +176,15 @@ export function createBodyFactory(world, materials) {
         } else if (kind === 'ground') {
             // CANNON.Plane es un piso infinito horizontal → más estable que un Box de altura 0
             shape = new CANNON.Plane();
+        } else if (kind === 'room-wall') {
+            // Las paredes del cuarto son PlaneGeometry (espesor = 0).
+            // CANNON.Plane (plano infinito) es la primitiva correcta: no tiene
+            // tunneling sin importar la velocidad. El quaternion sincronizado
+            // del mesh Three orienta el plano para que el normal apunte hacia
+            // el interior del cuarto.
+            shape = new CANNON.Plane();
         } else {
-            // Paredes: Box exacto desde el bounding box del mesh
+            // Paredes del clasificador (BoxGeometry real): Box exacto desde el bounding box del mesh
             const bbox = new THREE.Box3().setFromObject(mesh);
             const size = new THREE.Vector3();
             bbox.getSize(size);

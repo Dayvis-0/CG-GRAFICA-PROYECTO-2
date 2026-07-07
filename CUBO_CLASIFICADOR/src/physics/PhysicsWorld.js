@@ -13,7 +13,7 @@ import * as CANNON from 'cannon-es';
  */
 export function createPhysicsWorld() {
     const world = new CANNON.World({
-        gravity: new CANNON.Vec3(0, -20, 0), // g más fuerte que 9.8 → se siente más real en escala de cuarto
+        gravity: new CANNON.Vec3(0, -35, 0),
     });
 
     // Broadphase: las piezas son pocas, NaiveBroadphase suficiente y exacto

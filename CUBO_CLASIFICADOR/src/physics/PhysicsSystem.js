@@ -39,10 +39,13 @@ export function createPhysicsSystem(piecesGroup, bodyFactory, physicsWorld, clas
             body.wakeUp();
             kinematicPieces.add(mesh);
         } else {
-            // Al soltar: vuelve a dinámico, con velocidad cero para que
-            // la gravedad tome el control gradualmente
+            // Al soltar: vuelve a dinámico.
+            // Zerear velocidad evita que el objeto salga disparado (el dt=1/240
+            // de setKinematicPosition amplifica cualquier movimiento del mouse x240).
+            // El pequeño impulso en Y garantiza caída inmediata y natural
+            // sin el efecto "hover" del delay original.
             body.type = CANNON.Body.DYNAMIC;
-            body.velocity.setZero();
+            body.velocity.set(0, -2.5, 0);
             body.angularVelocity.setZero();
             body.wakeUp();
             kinematicPieces.delete(mesh);
