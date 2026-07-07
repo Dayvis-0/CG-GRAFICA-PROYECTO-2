@@ -4,20 +4,6 @@ import * as THREE from 'three';
 /**
  * Fábrica de cuerpos rígidos cannon-es a partir de meshes Three.
  * Mantiene el mapeo mesh ↔ body en un Map, accesible vía getBody(mesh).
- *
- * Cada pieza usa la forma más exacta posible (primitiva o Trimesh).
- * Las paredes y el panel son estáticos (mass = 0). El panel usa Trimesh
- * para respetar los huecos. El piso usa CANNON.Plane (más estable que un
- * Box de grosor cero).
- *
- * @param {CANNON.World} world
- * @param {object}        materials — { piece, wall, panel, ground }
- * @returns {{
- *   registerPiece:   (mesh: THREE.Mesh, mass: number) => CANNON.Body,
- *   registerStatic:   (mesh: THREE.Mesh, kind: 'wall'|'panel'|'ground') => CANNON.Body,
- *   getBody:          (mesh: THREE.Mesh) => CANNON.Body | undefined,
- *   getMeshFromBody:  (body: CANNON.Body) => THREE.Mesh | undefined,
- * }}
  */
 export function createBodyFactory(world, materials) {
     /** @type {Map<THREE.Mesh, CANNON.Body>} */
@@ -26,16 +12,7 @@ export function createBodyFactory(world, materials) {
     const bodyIdToMesh = new Map();
 
     // ─── Helpers ─────────────────────────────────────────────────
-    /**
-     * Construye la forma cannon correspondiente a cada pieza según su label.
-     * Cada forma se elige para que el comportamiento físico sea lo más realista posible:
-     *  - Esfera → Sphere (rodadura exacta)
-     *  - Cubo   → Box (cara plana exacta)
-     *  - Cono   → Cylinder(radiusTop=0) → pico + base → las piezas se caen del pico
-     *  - Pirámide → Cylinder(radiusTop=0, segs=4) → pirámide de 4 caras
-     *  - Hexágono → Cylinder(radio igual, segs=6) → prisma hexagonal exacto
-     *  - Estrella → Trimesh (es cóncava, Trimesh la representa fielmente)
-     */
+    /** Crea la forma cannon correspondiente a cada pieza (Sphere, Box, Cylinder o Trimesh). */
     function buildPieceShape(mesh) {
         const label = mesh.userData.label;
         const bbox = new THREE.Box3().setFromObject(mesh);
@@ -118,9 +95,6 @@ export function createBodyFactory(world, materials) {
     // ─── API pública ────────────────────────────────────────────
     /**
      * Registra una pieza como body dinámico. Sincroniza posición/rotación inicial.
-     * @param {THREE.Mesh} mesh
-     * @param {number} mass
-     * @returns {CANNON.Body}
      */
     function registerPiece(mesh, mass = 1) {
         const shape = buildPieceShape(mesh);
@@ -155,16 +129,16 @@ export function createBodyFactory(world, materials) {
 
     /**
      * Registra un mesh estático (mass = 0).
-     *  - 'panel': Trimesh → respeta los huecos del clasificador
-     *  - 'ground': Plane → colisión de piso estable (no un Box de altura cero)
-     *  - 'wall':   Box → colisión rápida y exacta
+     *  - 'panel':     Trimesh → respeta los huecos del clasificador
+     *  - 'ground':    Plane  → colisión de piso estable
+     *  - 'room-wall': Plane  → paredes del cuarto (PlaneGeometry, sin grosor)
+     *  - 'wall':      Box    → paredes del clasificador (BoxGeometry con volumen real)
      *
      * @param {THREE.Mesh} mesh
-     * @param {'wall'|'panel'|'ground'} kind
+     * @param {'wall'|'room-wall'|'panel'|'ground'} kind
      * @param {object}                  [opts]
      * @param {number}                  [opts.minThick] — espesor mínimo para
-     *   todas las dimensiones. Sirve para evitar tunneling en paredes delgadas
-     *   (ej: 0.5 para paredes del cuarto, que son PlaneGeometry de espesor 0).
+     *   paredes Box ('wall'). Evita dimensiones cero en BoxGeometry.
      * @returns {CANNON.Body}
      */
     function registerStatic(mesh, kind, opts = {}) {

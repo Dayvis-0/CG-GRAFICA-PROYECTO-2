@@ -1,30 +1,9 @@
 import * as THREE from 'three';
 
 /**
- * Maneja exclusivamente el ARRASTRE de piezas con el mouse.
- * - Las piezas en arrastre usan modo kinematic en cannon-es (empujan
- *   dinámicas, pero NO pueden atravesar estáticas por diseño del motor).
- * - Las PAREDES DEL CUARTO se manejan con clamp a límites de la caja
- *   (roomBounds), porque son PlaneGeometry (espesor cero) y el AABB
- *   3D de THREE no puede retener piezas que se eleven por encima de
- *   su rango Y.
- * - Las PAREDES DEL CLASIFICADOR se manejan con AABB individual
- *   (tienen espesor real de 0.08, el AABB estándar funciona bien).
- * - El PANEL perforado NO se incluye — las piezas deben poder
- *   atravesarlo para caer por los huecos.
- * - Deslizamiento natural por eje (X → Z → Y).
- *
- * @param {{ current: THREE.Camera }} activeCameraRef
- * @param {THREE.WebGLRenderer}       renderer
- * @param {object}                    opts
- * @param {THREE.Group}               opts.piecesGroup
- * @param {object}                    opts.classifierRules   — { isOverOwnHole(mesh) }
- * @param {object}                    opts.physicsSystem      — { setKinematic, setKinematicPosition }
- * @param {object}                    opts.roomBounds         — { half, height } del cuarto
- * @param {THREE.Mesh[]}              opts.obstacles          — meshes estáticos (solo clasificador)
- * @param {function}                  opts.onSelect           — (mesh | null) => void
- * @param {function}                  opts.onDragStart         — () => void
- * @param {function}                  opts.onDragEnd           — () => void
+ * Maneja el arrastre de piezas con el mouse (modo kinematic en cannon-es).
+ * Colisiones: clasificador via AABB, cuarto via clamp de límites.
+ * Deslizamiento natural por eje (X → Z → Y).
  */
 export function setupDragManager(activeCameraRef, renderer, {
     piecesGroup,
@@ -59,11 +38,7 @@ export function setupDragManager(activeCameraRef, renderer, {
 
     // ─── Colisión contra obstáculos del clasificador (AABB) ──────
     /**
-     * ¿El AABB de la pieza centrado en `pos` intersecta algún obstáculo?
-     * Solo se usa con las paredes del clasificador (tienen espesor real,
-     * el AABB 3D funciona bien). NO se usa con las paredes del cuarto
-     * (son planos, el AABB 3D las elude si la pieza cambia de altura).
-     *
+     * ¿El AABB de la pieza en `pos` intersecta alguna pared del clasificador?
      * @param {THREE.Vector3} pos
      * @returns {boolean}
      */
@@ -94,22 +69,14 @@ export function setupDragManager(activeCameraRef, renderer, {
     // ─── Clamp a límites del cuarto ──────────────────────────────
     /**
      * Margen de seguridad contra las paredes del cuarto.
-     * Las paredes en cannon-es tienen minThick: 0.8 (se extienden 0.4
-     * hacia adentro del cuarto desde la superficie visual). Sin este
-     * margen, una pieza soltada contra la pared ya estaría superpuesta
-     * con el volumen de física y el solver no siempre logra expulsarla
-     * → la pieza se traspasa.
+     * Las paredes del cuarto usan CANNON.Plane (sin grosor), pero el clamp
+     * del drag debe mantener la pieza dentro del área visible para que
+     * la posición Three y el body Cannon estén siempre alineados.
      */
     const ROOM_MARGIN = 0.5;
 
     /**
-     * Aplica clamp a la posición para que el AABB completo de la pieza
-     * quede DENTRO del cuarto, con un margen de seguridad que evita que
-     * el cuerpo físico de la pieza superponga con las paredes físicas.
-     * Se basa en el AABB actual de la pieza
-     * (offset desde su posición hasta cada cara del AABB).
-     * Esto funciona incluso si la pieza no está centrada en su origen.
-     *
+     * Clampea `pos` para que el AABB de la pieza quede dentro del cuarto.
      * @param {THREE.Vector3} pos
      * @returns {THREE.Vector3} — misma referencia, mutada
      */
@@ -131,11 +98,6 @@ export function setupDragManager(activeCameraRef, renderer, {
         const half = roomBounds.half;
         const h    = roomBounds.height;
 
-        // Usamos ROOM_MARGIN (0.5) para reducir el área efectiva del cuarto.
-        // Esto mantiene el AABB de la pieza alejado de la superficie
-        // visual de la pared lo suficiente para que su cuerpo físico
-        // no superponga con el volumen de colisión de la pared (minThick/2 = 0.4).
-        // Específico para piezas (roomBounds.margin = 0.5 es para la cámara).
         const m = ROOM_MARGIN;
         pos.x = Math.max(-half + _offMin.x + m, Math.min(half - _offMax.x - m, pos.x));
         pos.z = Math.max(-half + _offMin.z + m, Math.min(half - _offMax.z - m, pos.z));
@@ -147,14 +109,10 @@ export function setupDragManager(activeCameraRef, renderer, {
 
     // ─── Limitador de paso (anti-teleport) ──────────────────────────
     /**
-     * Limita el desplazamiento en cada eje a la mitad del tamaño del
-     * AABB de la pieza. Así la pieza nunca puede "saltarse" una pared
-     * del clasificador moviéndose más rápido de lo que su propio cuerpo
-     * permite en un solo frame.
-     *
+     * Limita el paso por eje al tamaño del AABB de la pieza — evita teleport entre paredes.
      * @param {THREE.Vector3} pos  — posición deseada
      * @param {THREE.Vector3} from — posición actual
-     * @returns {THREE.Vector3} — posición acotada
+     * @returns {THREE.Vector3}
      */
     function limitStep(pos, from) {
         _pieceBox.setFromObject(selected);

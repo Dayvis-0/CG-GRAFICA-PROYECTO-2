@@ -129,7 +129,6 @@ export function setupCameraFPS(camera, renderer, roomBounds, obstacles = [], dra
 
     // ─── Inicializar ─────────────────────────────────────────────
     updateCameraRotation();
-    camera.position.set(5, 1.6, 5);
 
     return { update, dispose };
 }

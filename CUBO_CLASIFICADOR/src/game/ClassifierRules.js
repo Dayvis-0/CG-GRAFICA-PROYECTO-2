@@ -28,17 +28,5 @@ export function createClassifierRules(panelMesh) {
         return isInsideHole(sx, sy, cfg);
     }
 
-    /**
-     * Callback para collision.js: ¿debemos ignorar esta colisión?
-     * Una pieza no colisiona con el panel si está sobre su propio hueco.
-     *
-     * @param {THREE.Mesh} mesh     — pieza que se mueve
-     * @param {THREE.Mesh} obstacle — obstáculo con el que choca
-     * @returns {boolean}
-     */
-    function shouldIgnoreCollision(mesh, obstacle) {
-        return obstacle === panelMesh && isOverOwnHole(mesh);
-    }
-
-    return { isOverOwnHole, shouldIgnoreCollision };
+    return { isOverOwnHole };
 }

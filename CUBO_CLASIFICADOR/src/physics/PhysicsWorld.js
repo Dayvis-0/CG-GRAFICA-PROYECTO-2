@@ -19,9 +19,7 @@ export function createPhysicsWorld() {
     // Broadphase: las piezas son pocas, NaiveBroadphase suficiente y exacto
     world.broadphase = new CANNON.NaiveBroadphase();
 
-    // Solver: más iteraciones = contactos más estables
-    // Aumentado de 12 a 20 para resolver mejor colisiones contra paredes
-    // delgadas (minThick=0.5) y evitar que piezas rápidas atraviesen.
+    // Solver: más iteraciones = contactos más estables con piezas rápidas
     world.solver.iterations = 30;
 
     // Sleep: cuerpos quietos no consumen CPU
@@ -59,17 +57,8 @@ export function createPhysicsWorld() {
         restitution: 0.02,
     }));
 
-    /**
-     * Avanza la simulación usando fixedStep con substeps de 1/240.
-     * Cuádruple de substeps vs el estándar 1/60: mínimo tunneling incluso
-     * con gravedad fuerte (-20) y piezas rebotando contra bordes delgados.
-     * El dt real se capa a 1/30 en AnimationLoop para evitar espiral de muerte.
-     * @param {number} dt — tiempo real desde el último frame (capped arriba)
-     */
+    /** Avanza la simulación. El dt se capa a 1/30 en AnimationLoop para evitar espiral de muerte. */
     function step(dt) {
-        // fixedStep(timestep, deltaTime): toma tantos substeps de timestep
-        // como sea necesario para cubrir deltaTime.
-        // 1/240 en vez de 1/120: el doble de substeps → aún menos tunneling
         world.fixedStep(1 / 240, dt);
     }
 

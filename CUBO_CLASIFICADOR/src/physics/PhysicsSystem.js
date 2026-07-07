@@ -2,32 +2,15 @@ import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
 
 /**
- * Sistema de físicas basado en cannon-es.
- * Responsabilidad ÚNICA: por frame, step el mundo y sincronizar los meshes
- * de Three con sus cuerpos de cannon. Maneja el modo kinematic (drag) y el
- * modo dinámico (decaen por gravedad, chocan y vuelcan).
- *
- * Ya no implementa lógica de "estabilidad ni empuje" a mano — eso lo hace
- * cannon-es internamente con su solver de contactos.
- *
- * @param {THREE.Group} piecesGroup      — grupo con los meshes de las piezas
- * @param {object}       bodyFactory      — { getBody(mesh) }
- * @param {object}       physicsWorld     — { step(dt) }
- * @param {object}       classifierRules  — { isOverOwnHole(mesh) } (lector de succion del hueco)
+ * Avanza el mundo cannon-es por frame y sincroniza meshes con sus bodies.
+ * Gestiona modo kinematic (drag) y succión de huecos.
  */
 export function createPhysicsSystem(piecesGroup, bodyFactory, physicsWorld, classifierRules) {
     /** @type {Set<THREE.Mesh>} */
     const kinematicPieces = new Set();
 
-    // ─── Modo kinematic (drag) ──────────────────────────────────
-    /**
-     * Pone una pieza en modo kinematic: cannon no aplica gravedad sobre ella
-     * pero otras piezas dinámicas chocan contra ella. La posición es
-     * controlada por el DragManager vía setKinematicPosition.
-     *
-     * @param {THREE.Mesh} mesh
-     * @param {boolean}    kinematic
-     */
+    // ─── Modo kinematic (drag) ─────────────────────────────────
+    /** Activa/desactiva modo kinematic. En kinematic, cannon no aplica gravedad a la pieza. */
     function setKinematic(mesh, kinematic) {
         const body = bodyFactory.getBody(mesh);
         if (!body) return;
@@ -39,11 +22,7 @@ export function createPhysicsSystem(piecesGroup, bodyFactory, physicsWorld, clas
             body.wakeUp();
             kinematicPieces.add(mesh);
         } else {
-            // Al soltar: vuelve a dinámico.
-            // Zerear velocidad evita que el objeto salga disparado (el dt=1/240
-            // de setKinematicPosition amplifica cualquier movimiento del mouse x240).
-            // El pequeño impulso en Y garantiza caída inmediata y natural
-            // sin el efecto "hover" del delay original.
+            // Al soltar: velocity=0 para no salir disparado; impulso Y para caída inmediata.
             body.type = CANNON.Body.DYNAMIC;
             body.velocity.set(0, -2.5, 0);
             body.angularVelocity.setZero();
@@ -52,21 +31,7 @@ export function createPhysicsSystem(piecesGroup, bodyFactory, physicsWorld, clas
         }
     }
 
-    /**
-     * Usado por DragManager: mueve la pieza kinematic a una posición.
-     *
-     * FIX (Opción A — simple y realista): además de setear body.position,
-     * se deriva body.velocity a partir del desplazamiento / dt para que
-     * cannon detecte el "barrido" del cuerpo entre frames y empuje
-     * correctamente a las piezas dinámicas vecinas (sin atravesarlas).
-     *
-     * No hace falta ningún step extra: el step normal del frame alcanza
-     * para que el solver resuelva los contactos. La pieza kinematic se
-     * comporta como en la vida real — empuja lo que toca, no lo atraviesa.
-     *
-     * @param {THREE.Mesh} mesh
-     * @param {THREE.Vector3} pos
-     */
+    /** Mueve la pieza kinematic y deriva su velocidad para que empuje piezas vecinas. */
     function setKinematicPosition(mesh, pos) {
         const body = bodyFactory.getBody(mesh);
         if (!body) return;
@@ -77,9 +42,7 @@ export function createPhysicsSystem(piecesGroup, bodyFactory, physicsWorld, clas
 
         body.position.set(pos.x, pos.y, pos.z);
 
-        // dt de referencia para derivar velocidad: timestep fijo del mundo.
-        // Debe coincidir con el primer argumento de world.fixedStep().
-        // PhysicsWorld ahora usa fixedStep(1/240, dt).
+        // dt del substep: debe coincidir con el primer arg de world.fixedStep()
         const dt = 1 / 240;
 
         body.velocity.set(
@@ -101,11 +64,8 @@ export function createPhysicsSystem(piecesGroup, bodyFactory, physicsWorld, clas
         }
     }
 
-    // ─── Succion del hueco ──────────────────────────────────────
-    // Cuando una pieza dinámica está justo sobre el hueco correcto a la altura
-    // del panel, le damos un pequeño empuje hacia abajo para "enganchearla".
-    // (Cannon no tiene forma nativa de saber qué pieza "debería" caer por un
-    // hueco — esa es la regla del juego, no física pura).
+    // ─── Succión del hueco ─────────────────────────────────────
+    // Empuja la pieza hacia abajo cuando está sobre su hueco correcto.
 
     function applyHoleSuction(mesh) {
         if (!classifierRules || !classifierRules.isOverOwnHole) return;
@@ -122,11 +82,10 @@ export function createPhysicsSystem(piecesGroup, bodyFactory, physicsWorld, clas
         }
     }
 
-    // ─── Update por frame ───────────────────────────────────────
     /**
-     * Avanza la simulación copiando mesh ≈ body para todas las piezas dinámicas.
+     * Avanza físicas y sincroniza meshes con sus bodies.
      * @param {number} dt
-     * @param {THREE.Mesh|null} draggedMesh — pieza kinematic; no se sincroniza desde acá
+     * @param {THREE.Mesh|null} draggedMesh — pieza en drag; no se sincroniza desde acá
      */
     function update(dt, draggedMesh) {
         // 1. Aplicar succion del hueco a piezas dinámicas

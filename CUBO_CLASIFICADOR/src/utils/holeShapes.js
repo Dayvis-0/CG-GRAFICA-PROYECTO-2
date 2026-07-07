@@ -84,16 +84,3 @@ export function hexagonHole(cx, cy, r) {
     }
     return path;
 }
-
-/**
- * Crea un hueco rectangular (para Prisma rectangular).
- */
-export function rectHole(cx, cy, w, h) {
-    const hw = w / 2, hh = h / 2;
-    const path = new Path();
-    path.moveTo(cx - hw, cy - hh);
-    path.lineTo(cx - hw, cy + hh);
-    path.lineTo(cx + hw, cy + hh);
-    path.lineTo(cx + hw, cy - hh);
-    return path;
-}

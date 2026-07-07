@@ -3,24 +3,13 @@ import * as THREE from 'three';
 import { attachAnimations } from './pieceAnimations.js';
 
 /**
- * Bucle de renderizado con físicas y comportamiento polimórfico por pieza.
- *
- * Responsabilidades:
- * 1. Avanzar el control FPS
- * 2. Step + sincronizar físicas (delegado a PhysicsSystem que usa cannon-es)
- * 3. Clamp de seguridad post-física (evita que piezas salgan del cuarto)
- * 4. Mover pieza seleccionada con flechas (desde InputManager)
- * 5. Update polimórfico de cada pieza (delegado a pieceAnimations)
- * 6. Renderizar
- *
- * El bucle NO sabe qué piezas existen ni cómo animarlas — eso vive en
- * pieceAnimations.js. Cada pieza expone su propio update().
+ * Bucle de renderizado principal: FPS, físicas, clamp de seguridad, input y render.
  *
  * @param {object} opts
  * @param {THREE.Scene}           opts.scene
  * @param {THREE.WebGLRenderer}   opts.renderer
  * @param {{ current: THREE.Camera }} opts.activeCameraRef
- * @param {{ update: function, dispose: function }}   opts.fpsControl
+ * @param {{ update: function }}   opts.fpsControl
  * @param {THREE.Group}           opts.pieces
  * @param {object}                opts.physicsSystem
  * @param {object}                opts.inputManager
@@ -49,20 +38,7 @@ export function setupAnimationLoop({
     const HEIGHT = roomBounds?.height ?? 8;
     const MARGIN = 0.5; // mismo margen que DragManager
 
-    /**
-     * Safety net: después del step de física, verifica que todas las
-     * piezas dinámicas estén dentro del cuarto. Si alguna se salió
-     * (por tunneling, solver insuficiente, etc.), la clampa de vuelta
-     * y anula TODA la velocidad (no solo el eje que se salió).
-     *
-     * Si solo se anulara la velocidad del eje clampado, la pieza podría
-     * seguir moviéndose por otro eje, llegar a otra pared, y repetir el
-     * ciclo hasta que la gravedad + momentum la saquen definitivamente.
-     * Al anular TODA la velocidad, la pieza se queda quieta en el borde,
-     * y solo la gravedad actúa sobre ella.
-     *
-     * Sin esto, una pieza que atraviesa una pared se pierde para siempre.
-     */
+    /** Clamp post-física: si una pieza salió del cuarto, la reencuadra y anula su velocidad. */
     function clampToRoomBounds(draggedMesh) {
         for (const child of pieces.children) {
             if (!child.isMesh || child === draggedMesh) continue;
@@ -106,9 +82,7 @@ export function setupAnimationLoop({
                 clamped = true;
             }
 
-            // Si algún eje se clampó, anular TODA la velocidad y angular.
-            // Esto evita que la pieza siga moviéndose por otro eje y
-            // termine contra otra pared o escapando definitivamente.
+            // Anular toda la velocidad para evitar que siga escapando por otro eje
             if (clamped) {
                 body.velocity.setZero();
                 body.angularVelocity.setZero();
@@ -118,7 +92,6 @@ export function setupAnimationLoop({
     }
 
     // ─── Bucle ────────────────────────────────────────────────────
-
     let lastTime = performance.now();
 
     function animate(now) {

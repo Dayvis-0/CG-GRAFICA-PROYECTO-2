@@ -7,7 +7,6 @@ import {
     diamondHole,
     hexagonHole,
     starHole,
-    rectHole,
 } from '../utils/holeShapes.js';
 
 // Constantes del cubo
@@ -17,15 +16,8 @@ export const WALL_HEIGHT = 2.5;    // altura de las paredes (sin tapa)
 const PANEL_DEPTH = 0.5;    // grosor del panel superior con huecos
 const MID         = OUTER / 2;
 
-// Material compartido
-const WALL_MAT = new THREE.MeshStandardMaterial({
-    color: 0x2a4a55,
-    roughness: 0.6,
-    metalness: 0.15,
-    side: THREE.DoubleSide,
-});
-
-const PANEL_MAT = new THREE.MeshStandardMaterial({
+// Material compartido para paredes y panel
+const BOX_MAT = new THREE.MeshStandardMaterial({
     color: 0x2a4a55,
     roughness: 0.6,
     metalness: 0.15,
@@ -40,7 +32,6 @@ const HOLE_BUILDERS = {
     diamond:  (cfg) => diamondHole(cfg.cx, cfg.cy, cfg.hole.rx, cfg.hole.ry),
     hexagon:  (cfg) => hexagonHole(cfg.cx, cfg.cy, cfg.hole.r),
     star:     (cfg) => starHole(cfg.cx, cfg.cy, cfg.hole.outerR, cfg.hole.innerR, cfg.hole.points || 4),
-    rect:     (cfg) => rectHole(cfg.cx, cfg.cy, cfg.hole.w, cfg.hole.h),
 };
 
 // Función principal
@@ -56,7 +47,7 @@ export function createClassifier() {
     // --- 1. Pared inferior (suelo) ---
     const floor = new THREE.Mesh(
         new THREE.BoxGeometry(OUTER, WALL_THICK, OUTER),
-        WALL_MAT
+        BOX_MAT
     );
     floor.position.y = WALL_THICK / 2;
     floor.receiveShadow = true;
@@ -77,7 +68,7 @@ export function createClassifier() {
     for (const cfg of wallConfigs) {
         const wall = new THREE.Mesh(
             new THREE.BoxGeometry(...cfg.size),
-            WALL_MAT
+            BOX_MAT
         );
         wall.position.set(...cfg.pos);
         wall.castShadow = true;
@@ -116,7 +107,7 @@ function buildTopPanel() {
         bevelEnabled: false,
     });
 
-    const mesh = new THREE.Mesh(geo, PANEL_MAT);
+    const mesh = new THREE.Mesh(geo, BOX_MAT);
     mesh.rotation.x = -Math.PI / 2;
     mesh.position.y = WALL_HEIGHT;
     mesh.castShadow = true;
