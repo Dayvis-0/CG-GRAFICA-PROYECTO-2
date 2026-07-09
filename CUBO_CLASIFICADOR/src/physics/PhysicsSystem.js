@@ -22,8 +22,17 @@ export function createPhysicsSystem(piecesGroup, bodyFactory, physicsWorld, clas
             body.wakeUp();
             kinematicPieces.add(mesh);
         } else {
-            // Al soltar: velocity=0 para no salir disparado; impulso Y para caída inmediata.
+            // Al soltar: resincronizar body a la posición actual del mesh
+            // (el dragManager mueve el mesh + body en simultáneo, pero el
+            // solver de cannon puede acumular penetración contra el Trimesh
+            // del panel. Si no resincronizamos, cannon eyecta la pieza).
             body.type = CANNON.Body.DYNAMIC;
+            body.position.set(mesh.position.x, mesh.position.y, mesh.position.z);
+            body.quaternion.set(
+                mesh.quaternion.x, mesh.quaternion.y,
+                mesh.quaternion.z, mesh.quaternion.w,
+            );
+            // SÓLO velocidad hacia abajo — velocidad XY residual causa rebotes
             body.velocity.set(0, -2.5, 0);
             body.angularVelocity.setZero();
             body.wakeUp();

@@ -111,6 +111,8 @@ const dragManager = setupDragManager(activeCameraRef, renderer, {
     physicsSystem,
     obstacles: dragObstacles,
     roomBounds: room.userData.bounds,
+    classifierTop: 3.0,            // WALL_HEIGHT + PANEL_DEPTH
+    classifierHalf: 2.0,          // OUTER / 2
     onSelect: (mesh) => {
         if (interfaceCtrl) interfaceCtrl.onPieceSelected(mesh);
     },

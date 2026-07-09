@@ -11,6 +11,8 @@ export function setupDragManager(activeCameraRef, renderer, {
     physicsSystem,
     roomBounds = { half: 7, height: 8 },
     obstacles = [],
+    classifierTop = 3.0,
+    classifierHalf = 2.0,
     onSelect,
     onDragStart,
     onDragEnd,
@@ -80,6 +82,18 @@ export function setupDragManager(activeCameraRef, renderer, {
      * @param {THREE.Vector3} pos
      * @returns {THREE.Vector3} — misma referencia, mutada
      */
+    // ─── Colisión contra el panel del clasificador (eje Y) ──────
+    /**
+     * ¿La pieza está sobre el área del clasificador (en X/Z)?
+     * @param {THREE.Vector3} pos
+     * @returns {boolean}
+     */
+    function isOverClassifier(pos) {
+        const margin = 0.2;
+        return Math.abs(pos.x) < classifierHalf + margin
+            && Math.abs(pos.z) < classifierHalf + margin;
+    }
+
     function clampToRoom(pos) {
         _pieceBox.setFromObject(selected);
 
@@ -231,10 +245,13 @@ export function setupDragManager(activeCameraRef, renderer, {
 
         let newPos = target.clone().sub(offset);
 
-        // ─── Límite inferior (piso / hueco) ─────────────────────
+        // ─── Límite inferior (piso / hueco / panel) ────────────
         if (selected.userData.minY !== undefined) {
             if (classifierRules.isOverOwnHole(selected)) {
                 newPos.y = Math.max(0.3, newPos.y);
+            } else if (isOverClassifier(newPos)) {
+                // Sobre el clasificador pero no sobre su hueco → no atravesar el panel
+                newPos.y = Math.max(classifierTop + 0.1, newPos.y);
             } else {
                 newPos.y = Math.max(selected.userData.minY, newPos.y);
             }
@@ -255,8 +272,17 @@ export function setupDragManager(activeCameraRef, renderer, {
 
     function onPointerUp() {
         if (selected) {
-            // setKinematic(false) preserva la velocidad derivada del drag →
-            // caída inmediata y natural, sin efecto "hover".
+            // Antes de soltar, reposicionar la pieza para evitar que cannon
+            // la eyecte por penetración con el Trimesh del panel.
+            const pos = selected.position.clone();
+            if (classifierRules.isOverOwnHole(selected)) {
+                // Sobre su hueco → mandarla YA abajo del panel para que caiga
+                pos.y = 0.3;
+            } else if (isOverClassifier(pos)) {
+                // Sobre el clasificador pero no sobre su hueco → justo arriba del panel
+                pos.y = classifierTop + 0.15;
+            }
+            selected.position.copy(pos);
             physicsSystem.setKinematic(selected, false);
             selected = null;
         }
@@ -282,6 +308,8 @@ export function setupDragManager(activeCameraRef, renderer, {
             if (selected.userData.minY !== undefined) {
                 if (classifierRules.isOverOwnHole(selected)) {
                     pos.y = Math.max(0.3, pos.y);
+                } else if (isOverClassifier(pos)) {
+                    pos.y = Math.max(classifierTop + 0.1, pos.y);
                 } else {
                     pos.y = Math.max(selected.userData.minY, pos.y);
                 }
