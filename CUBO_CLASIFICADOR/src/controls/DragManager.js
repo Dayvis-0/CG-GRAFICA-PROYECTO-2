@@ -291,11 +291,11 @@ export function setupDragManager(activeCameraRef, renderer, {
                 pos.y = Math.min(pos.y, 0.3);
             } else if (isOverClassifier(pos)) {
                 // Sobre el clasificador pero NO sobre su hueco:
-                // colocar la pieza con su base exactamente apoyada sobre el panel.
-                // classifierTop es la cara SUPERIOR del panel (Y=3.0).
-                // El centro de la pieza debe estar a classifierTop + halfH + un
-                // margen mínimo (0.05) para evitar penetración con el Trimesh.
-                pos.y = classifierTop + halfH + 0.05;
+                // Solo subir si la pieza estuviera POR DEBAJO del margen seguro
+                // (penetrando el Trimesh). Si ya está más arriba, soltarla donde está.
+                // Antes era una asignación directa → forzaba un snap hacia abajo
+                // aunque la tuvieras a Y=5, causando la caída brusca.
+                pos.y = Math.max(pos.y, classifierTop + halfH + 0.05);
             }
             selected.position.copy(pos);
             physicsSystem.setKinematic(selected, false);

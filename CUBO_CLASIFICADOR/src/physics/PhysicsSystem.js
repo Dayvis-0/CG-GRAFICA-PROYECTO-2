@@ -86,22 +86,9 @@ export function createPhysicsSystem(piecesGroup, bodyFactory, physicsWorld, clas
     }
 
     // ─── Succión del hueco ─────────────────────────────────────
-    // Empuja la pieza hacia abajo cuando está sobre su hueco correcto.
-
-    function applyHoleSuction(mesh) {
-        if (!classifierRules || !classifierRules.isOverOwnHole) return;
-        if (kinematicPieces.has(mesh)) return;
-
-        // Si la pieza está cayendo y pasa cerca del hueco correcto, succionar
-        if (classifierRules.isOverOwnHole(mesh)) {
-            const body = bodyFactory.getBody(mesh);
-            if (!body) return;
-            // Sólo succionar si está descendiendo y cerca de la altura del panel
-            if (body.position.y < 3.2 && body.velocity.y < 0.5) {
-                body.velocity.y = -3.5; // empuje hacia abajo para que caiga por el hueco
-            }
-        }
-    }
+    // Eliminada: onPointerUp ya posiciona la pieza en Y=0.3 (dentro del cubo)
+    // cuando está sobre su hueco. Inyectar velocity.y=-3.5 cada frame era
+    // redundante y causaba caída antinatural al soltar sobre el clasificador.
 
     /**
      * Avanza físicas y sincroniza meshes con sus bodies.
@@ -109,16 +96,10 @@ export function createPhysicsSystem(piecesGroup, bodyFactory, physicsWorld, clas
      * @param {THREE.Mesh|null} draggedMesh — pieza en drag; no se sincroniza desde acá
      */
     function update(dt, draggedMesh) {
-        // 1. Aplicar succion del hueco a piezas dinámicas
-        for (const child of piecesGroup.children) {
-            if (!child.isMesh || child === draggedMesh) continue;
-            applyHoleSuction(child);
-        }
-
-        // 2. Avanzar el mundo cannon (un único step por frame)
+        // 1. Avanzar el mundo cannon (un único step por frame)
         physicsWorld.step(dt);
 
-        // 3. Sincronizar body → mesh para piezas dinámicas (no kinematic)
+        // 2. Sincronizar body → mesh para piezas dinámicas (no kinematic)
         for (const child of piecesGroup.children) {
             if (!child.isMesh) continue;
             if (child === draggedMesh) continue; // kinematic: ya lo movió DragManager
