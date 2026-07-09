@@ -22,19 +22,27 @@ export function createPhysicsSystem(piecesGroup, bodyFactory, physicsWorld, clas
             body.wakeUp();
             kinematicPieces.add(mesh);
         } else {
-            // Al soltar: resincronizar body a la posición actual del mesh
-            // (el dragManager mueve el mesh + body en simultáneo, pero el
-            // solver de cannon puede acumular penetración contra el Trimesh
-            // del panel. Si no resincronizamos, cannon eyecta la pieza).
+            // Al soltar la pieza:
+            // 1) Sincronizar body.position con el mesh ANTES de pasar a DYNAMIC.
+            //    Sin esto, si Cannon tiene el body en posición distinta (penetrando
+            //    geometría), el solver lo eyecta "por todos lados" al liberarlo.
+            // 2) Velocidad y angular a CERO absoluto.
+            //    La velocidad kinematic derivada (delta/dt) puede ser enorme;
+            //    descartarla por completo es lo correcto: la gravedad se encarga
+            //    de la caída — igual que en la vida real al soltar un objeto.
             body.type = CANNON.Body.DYNAMIC;
             body.position.set(mesh.position.x, mesh.position.y, mesh.position.z);
             body.quaternion.set(
                 mesh.quaternion.x, mesh.quaternion.y,
                 mesh.quaternion.z, mesh.quaternion.w,
             );
-            // SÓLO velocidad hacia abajo — velocidad XY residual causa rebotes
-            body.velocity.set(0, -2.5, 0);
+            // CRÍTICO: resetear velocidad DESPUÉS de setear posición.
+            // Cannon puede acumular velocidad residual del modo kinematic;
+            // si no se limpia aquí, la pieza sale disparada al soltar.
+            body.velocity.setZero();
             body.angularVelocity.setZero();
+            body.force.setZero();
+            body.torque.setZero();
             body.wakeUp();
             kinematicPieces.delete(mesh);
         }
@@ -51,13 +59,17 @@ export function createPhysicsSystem(piecesGroup, bodyFactory, physicsWorld, clas
 
         body.position.set(pos.x, pos.y, pos.z);
 
-        // dt del substep: debe coincidir con el primer arg de world.fixedStep()
+        // Derivar velocidad para que la pieza empuje a las vecinas durante el drag.
+        // Se capea a MAX_KINEMATIC_SPEED para evitar velocidades bestiales si el
+        // mouse apenas se mueve y el dt es microscópico (1/240 ≈ 0.004 s).
         const dt = 1 / 240;
+        const MAX_KINEMATIC_SPEED = 15; // unidades/s — suficiente para empujar sin salir disparado
 
+        const clamp = (v) => Math.max(-MAX_KINEMATIC_SPEED, Math.min(MAX_KINEMATIC_SPEED, v));
         body.velocity.set(
-            (pos.x - oldX) / dt,
-            (pos.y - oldY) / dt,
-            (pos.z - oldZ) / dt,
+            clamp((pos.x - oldX) / dt),
+            clamp((pos.y - oldY) / dt),
+            clamp((pos.z - oldZ) / dt),
         );
         body.angularVelocity.setZero();
 

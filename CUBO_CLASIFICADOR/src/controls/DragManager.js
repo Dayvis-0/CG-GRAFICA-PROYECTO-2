@@ -247,11 +247,17 @@ export function setupDragManager(activeCameraRef, renderer, {
 
         // ─── Límite inferior (piso / hueco / panel) ────────────
         if (selected.userData.minY !== undefined) {
+            _pieceBox.setFromObject(selected);
+            _pieceBox.getSize(_size);
+            const halfH = _size.y * 0.5;
+
             if (classifierRules.isOverOwnHole(selected)) {
                 newPos.y = Math.max(0.3, newPos.y);
             } else if (isOverClassifier(newPos)) {
-                // Sobre el clasificador pero no sobre su hueco → no atravesar el panel
-                newPos.y = Math.max(classifierTop + 0.1, newPos.y);
+                // Sobre el clasificador pero no sobre su hueco → la base de la
+                // pieza NO puede penetrar el panel. Límite = cara superior del
+                // panel + half-height real de la pieza.
+                newPos.y = Math.max(classifierTop + halfH, newPos.y);
             } else {
                 newPos.y = Math.max(selected.userData.minY, newPos.y);
             }
@@ -272,15 +278,24 @@ export function setupDragManager(activeCameraRef, renderer, {
 
     function onPointerUp() {
         if (selected) {
-            // Antes de soltar, reposicionar la pieza para evitar que cannon
-            // la eyecte por penetración con el Trimesh del panel.
+            // Calcular el half-size real de la pieza para saber cuánto margen
+            // necesitamos sobre el panel. Sin esto, el Trimesh de Cannon
+            // detecta penetración y eyecta la pieza "por todos lados".
+            _pieceBox.setFromObject(selected);
+            _pieceBox.getSize(_size);
+            const halfH = _size.y * 0.5;
+
             const pos = selected.position.clone();
             if (classifierRules.isOverOwnHole(selected)) {
-                // Sobre su hueco → mandarla YA abajo del panel para que caiga
-                pos.y = 0.3;
+                // Sobre su hueco → posicionar justo debajo del panel para que caiga
+                pos.y = Math.min(pos.y, 0.3);
             } else if (isOverClassifier(pos)) {
-                // Sobre el clasificador pero no sobre su hueco → justo arriba del panel
-                pos.y = classifierTop + 0.15;
+                // Sobre el clasificador pero NO sobre su hueco:
+                // colocar la pieza con su base exactamente apoyada sobre el panel.
+                // classifierTop es la cara SUPERIOR del panel (Y=3.0).
+                // El centro de la pieza debe estar a classifierTop + halfH + un
+                // margen mínimo (0.05) para evitar penetración con el Trimesh.
+                pos.y = classifierTop + halfH + 0.05;
             }
             selected.position.copy(pos);
             physicsSystem.setKinematic(selected, false);
@@ -306,10 +321,14 @@ export function setupDragManager(activeCameraRef, renderer, {
             pos.z += dz;
 
             if (selected.userData.minY !== undefined) {
+                _pieceBox.setFromObject(selected);
+                _pieceBox.getSize(_size);
+                const halfH = _size.y * 0.5;
+
                 if (classifierRules.isOverOwnHole(selected)) {
                     pos.y = Math.max(0.3, pos.y);
                 } else if (isOverClassifier(pos)) {
-                    pos.y = Math.max(classifierTop + 0.1, pos.y);
+                    pos.y = Math.max(classifierTop + halfH, pos.y);
                 } else {
                     pos.y = Math.max(selected.userData.minY, pos.y);
                 }
