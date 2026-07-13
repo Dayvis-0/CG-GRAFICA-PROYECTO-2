@@ -1,6 +1,6 @@
 import { isInsideHole } from '../utils/HoleDetector.js';
 import { HOLE_CONFIGS } from '../data/holeConfigs.js';
-import { WALL_HEIGHT } from '../objects/Classifier.js';
+import { WALL_HEIGHT } from '../data/classifierDimensions.js';
 
 /**
  * Reglas del juego: determina si una pieza está sobre su hueco correspondiente.

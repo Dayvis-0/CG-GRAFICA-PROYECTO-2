@@ -1,7 +1,5 @@
 import * as THREE from 'three';
 
-import { attachAnimations } from './pieceAnimations.js';
-
 /**
  * Bucle de renderizado principal: FPS, físicas, clamp de seguridad, input y render.
  *
@@ -27,9 +25,6 @@ export function setupAnimationLoop({
     dragManager,
     roomBounds,
 }) {
-    // Vincular comportamientos de animación por tipo de pieza
-    attachAnimations(pieces);
-
     // ─── Reusables para clamp post-física ────────────────────────
     const _box    = new THREE.Box3();
     const _offMin = new THREE.Vector3();
@@ -121,7 +116,7 @@ export function setupAnimationLoop({
             if (inputManager.isDown('ArrowRight')) dragManager.moveSelectedBy( step,  0);
         }
 
-        // 5. Update polimórfico por pieza (delegado a pieceAnimations)
+        // 5. Update polimórfico por pieza (vía userData.update, si existe)
         for (const child of pieces.children) {
             if (child.userData.update) {
                 child.userData.update(child, child === draggedMesh);

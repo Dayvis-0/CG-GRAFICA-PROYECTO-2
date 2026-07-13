@@ -1,8 +1,7 @@
 import * as THREE from 'three';
 
 /**
- * Crea el cuarto completo: piso, techo y 4 paredes.
- * Basado en escena.html pero con sombras habilitadas y materiales PBR.
+ * Crea el cuarto completo: piso, techo y 4 paredes con sombras y materiales PBR.
  *
  * @param {object} options
  * @param {number} options.size       - Ancho/profundidad del cuarto (default 10)

@@ -1,6 +1,5 @@
 /**
  * Configura el HUD y panel de control del Cubo Clasificador.
- * (Modo FPS: solo cámara perspectiva, proyección fija)
  *
  * Responsabilidad ÚNICA: manejar la interfaz DOM (HUD + panel).
  * No escucha teclado — eso vive en InputManager + AnimationLoop.
@@ -143,10 +142,6 @@ export function setupInterface({
     document.getElementById('wf-btn').onclick = () => {
         onStateChange('wireframe', prev => !prev);
     };
-
-    // ─── PANEL: Proyección (FPS fijo) ───────────
-    document.getElementById('hud-proj').textContent = 'Perspectiva (FPS)';
-    document.getElementById('proj-ortho').style.display = 'none';
 
     // ─── PANEL: Luces ───────────────────────────
     document.querySelectorAll('.lighttoggle').forEach(tg => {

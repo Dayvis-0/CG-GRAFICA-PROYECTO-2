@@ -16,7 +16,7 @@ Construido con **Three.js** (render 3D) y **cannon-es** (físicas), todo desde u
 | Mover pieza agarrada | **Flechas** del teclado |
 | Soltar el mouse | **ESC** |
 
-El objetivo es llevar cada pieza al hueco que coincide con su forma. Cuando la pieza está sobre su hueco correcto, una **succión física** la empuja hacia abajo para que caiga limpiamente.
+El objetivo es llevar cada pieza al hueco que coincide con su forma. Cuando la pieza está sobre su hueco correcto y la sueltas, se posiciona dentro del cubo y la gravedad termina el trabajo.
 
 ---
 
@@ -75,29 +75,29 @@ CUBO_CLASIFICADOR/
     ├── physics/
     │   ├── PhysicsWorld.js   # Mundo cannon-es (gravedad -35, contact materials)
     │   ├── BodyFactory.js    # Registro de bodies: dinámicos (piezas) y estáticos (paredes, panel)
-    │   └── PhysicsSystem.js  # Step + sync mesh↔body + succión de huecos + modo kinematic
+    │   └── PhysicsSystem.js  # Step + sync mesh↔body + modo kinematic + velocity trail
     ├── game/
     │   └── ClassifierRules.js # Lógica: ¿la pieza está sobre su hueco?
     ├── ui/
     │   └── Interface.js      # HUD + panel de control (selección, materiales, texturas, luces)
     ├── animations/
-    │   ├── AnimationLoop.js  # Bucle principal (físicas → clamp → input → anim → render)
-    │   └── pieceAnimations.js # Animaciones polimórficas por pieza (ej: esfera rota al rodar)
+    │   └── AnimationLoop.js  # Bucle principal (físicas → clamp → input → anim → render)
     ├── utils/
     │   ├── ResizeHandler.js  # Responsive (resize de ventana)
     │   ├── geometry.js       # Vértices de estrella (compartido entre huecos y piezas)
-    │   ├── HoleDetector.js   # Detección punto-en-hueco (ray casting, círculo, triángulo, etc.)
+    │   ├── HoleDetector.js   # Detección punto-en-hueco (círculo, triángulo, polígono, etc.)
     │   └── holeShapes.js     # Generación de Paths para los 6 tipos de hueco
     └── data/
-        └── holeConfigs.js    # FUENTE ÚNICA: configuración de los 6 huecos y piezas
+        ├── holeConfigs.js          # FUENTE ÚNICA: configuración de los 6 huecos y piezas
+        └── classifierDimensions.js # Constantes geométricas del clasificador (OUTER, WALL_HEIGHT, ...)
 ```
 
 ### Principios de diseño
 
-- **Single Source of Truth**: `data/holeConfigs.js` define tamaños y posiciones de huecos y piezas. `Classifier.js` y `Pieces.js` importan del mismo archivo.
+- **Single Source of Truth**: `data/holeConfigs.js` define tamaños y posiciones de huecos y piezas. `Classifier.js` y `Pieces.js` importan del mismo archivo. `data/classifierDimensions.js` centraliza las constantes geométricas del clasificador.
 - **Single Responsibility**: cada archivo hace UNA cosa. Ej: `ClassifierRules.js` solo responde "¿está sobre su hueco?", no sabe de físicas ni de input.
 - **Separación render-física**: Three.js renderiza, cannon-es simula. `PhysicsSystem.js` sincroniza ambos mundos.
-- **Polimorfismo**: cada pieza expone `userData.update(mesh, isDragged)` y el bucle no necesita saber qué tipo es.
+- **Descubrimiento por tipo**: `BodyFactory.js` y `AnimationLoop.js` determinan el comportamiento de cada pieza por `pieceType` (no por label), manteniendo el polimorfismo sin acoplamiento.
 
 ---
 
@@ -110,9 +110,10 @@ CUBO_CLASIFICADOR/
 | **Sombras** | Directional light con shadow map 1024×1024, PCFSoft |
 | **Colisión de cámara** | AABB contra paredes del cuarto y del clasificador |
 | **Colisión de drag** | AABB por eje (X → Z → Y) para deslizamiento natural |
-| **Panel perforado** | `CANNON.Box` (no Trimesh: las colisiones contra Trimesh no son fiables con formas no esféricas). Los huecos se manejan **lógicamente** desde `onPointerUp` |
+| **Panel perforado** | `CANNON.Box` (no Trimesh). Los huecos se manejan **lógicamente** desde `onPointerUp` |
 | **Anti-tunneling** | `limitStep()` limita el desplazamiento al tamaño del AABB de la pieza |
-| **Drop en hueco** | Al soltar la pieza sobre su hueco correcto, `onPointerUp` la posiciona en Y=0.3 (dentro del cubo). La gravedad de cannon-es se encarga del resto — ya no hay succión forzada |
+| **Drop en hueco** | Al soltar la pieza sobre su hueco correcto, `onPointerUp` la posiciona en Y=0.3 (dentro del cubo). La gravedad de cannon-es se encarga del resto |
+| **Drag trail** | Las 8 últimas posiciones del drag se trackean para calcular la velocidad de soltado (suave y natural) |
 | **Fixed timestep** | `world.fixedStep(1/240, dt)` con dt máximo 1/30 para evitar espiral de muerte |
 | **Sleep** | Cuerpos cannon-es entran en sleep para ahorrar CPU |
 

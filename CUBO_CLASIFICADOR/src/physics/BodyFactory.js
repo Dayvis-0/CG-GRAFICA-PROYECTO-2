@@ -12,49 +12,48 @@ export function createBodyFactory(world, materials) {
     const bodyIdToMesh = new Map();
 
     // ─── Helpers ─────────────────────────────────────────────────
-    /** Crea la forma cannon correspondiente a cada pieza (Sphere, Box, Cylinder o Trimesh). */
+    /** Crea la forma cannon correspondiente a cada pieza según pieceType. */
     function buildPieceShape(mesh) {
-        const label = mesh.userData.label;
+        const type = mesh.userData.pieceType;
         const bbox = new THREE.Box3().setFromObject(mesh);
         const size = new THREE.Vector3();
         bbox.getSize(size);
 
-        switch (label) {
-            case 'Esfera': {
+        switch (type) {
+            case 'sphere': {
                 const r = size.x / 2;
                 return new CANNON.Sphere(r);
             }
-            case 'Cubo': {
+            case 'box': {
                 return new CANNON.Box(new CANNON.Vec3(
                     size.x / 2, size.y / 2, size.z / 2,
                 ));
             }
-            case 'Cono': {
+            case 'cone': {
                 // THREE.ConeGeometry(r, h, s): tip en +y, base en -y
                 // CANNON.Cylinder(radiusTop, radiusBottom, h, s): top en +y, bottom en -y
-                // Cono: tip arriba (radiusTop=0), base abajo (radiusBottom=r)
+                // Cono: tip arriba (radiusTop=0), base abajo (radiusBottom=r).
+                // pieceArgs = [r, h, segments]; reutilizamos el segments de Three
+                // para que la pirámide (4 lados) y el cono (32) coincidan.
                 const r = size.x / 2;
                 const h = size.y;
-                return new CANNON.Cylinder(0, r, h, 12);
+                const segments = mesh.userData.pieceArgs?.[2] ?? 12;
+                return new CANNON.Cylinder(0, r, h, segments);
             }
-            case 'Hexágono': {
-                // Prisma hexagonal: Cylinder con mismo radius top y bottom, 6 lados
+            case 'cylinder': {
+                // Prisma hexagonal: Cylinder con mismo radius top y bottom.
+                // pieceArgs = [rTop, rBottom, h, radialSegments].
                 const r = size.x / 2;
                 const h = size.y;
-                return new CANNON.Cylinder(r, r, h, 6);
+                const segments = mesh.userData.pieceArgs?.[3] ?? 6;
+                return new CANNON.Cylinder(r, r, h, segments);
             }
-            case 'Pirámide': {
-                // THREE.ConeGeometry(r, h, 4): pirámide de 4 caras, tip en +y
-                const r = size.x / 2;
-                const h = size.y;
-                return new CANNON.Cylinder(0, r, h, 4);
-            }
-            case 'Estrella': {
+            case 'star': {
                 // La estrella es cóncava → Trimesh para representar indentaciones
                 return buildTrimeshFromGeometry(mesh.geometry);
             }
             default: {
-                console.warn(`Unknown piece label "${label}", usando Box fallback`);
+                console.warn(`Unknown pieceType "${type}", usando Box fallback`);
                 return new CANNON.Box(new CANNON.Vec3(
                     size.x / 2, size.y / 2, size.z / 2,
                 ));

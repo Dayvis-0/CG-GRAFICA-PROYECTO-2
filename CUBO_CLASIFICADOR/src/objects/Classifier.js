@@ -1,6 +1,13 @@
 import * as THREE from 'three';
 import { HOLE_CONFIGS } from '../data/holeConfigs.js';
 import {
+    OUTER,
+    WALL_THICK,
+    WALL_HEIGHT,
+    PANEL_DEPTH,
+    MID,
+} from '../data/classifierDimensions.js';
+import {
     circleHole,
     squareHole,
     triangleHole,
@@ -8,13 +15,6 @@ import {
     hexagonHole,
     starHole,
 } from '../utils/holeShapes.js';
-
-// Constantes del cubo
-const OUTER       = 4;      // ancho y fondo exterior
-const WALL_THICK  = 0.08;   // grosor de cada pared (más delgada = más hueco)
-export const WALL_HEIGHT = 2.5;    // altura de las paredes (sin tapa)
-const PANEL_DEPTH = 0.5;    // grosor del panel superior con huecos
-const MID         = OUTER / 2;
 
 // Material compartido para paredes y panel
 const BOX_MAT = new THREE.MeshStandardMaterial({

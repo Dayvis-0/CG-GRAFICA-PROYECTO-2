@@ -17,93 +17,70 @@ import { createPhysicsWorld }   from './physics/PhysicsWorld.js';
 import { createBodyFactory }    from './physics/BodyFactory.js';
 import { createPhysicsSystem }  from './physics/PhysicsSystem.js';
 import { createClassifierRules } from './game/ClassifierRules.js';
+import { WALL_HEIGHT, PANEL_DEPTH, OUTER } from './data/classifierDimensions.js';
 
-// 1. Input centralizado (teclado + pointer lock)
+// ─── Input · Escena · Cámara · Renderer ────────────────────────────
 const inputManager = createInputManager();
-
-// 2. Escena
 const scene = createScene();
-
-// 3. Renderer
 const renderer = createRenderer(document.body);
-
-// 4. Cámara FPS (primera persona)
 const { cam } = createCamera();
 
-// 5. Cuarto (piso, techo, 4 paredes)
+// ─── Geometría del cuarto y clasificador ───────────────────────────
 const room = createRoom({ size: 14, height: 8 });
 scene.add(room);
 
-// 6. Cubo clasificador con 6 huecos
 const { group: classifier, walls, panel } = createClassifier();
 scene.add(classifier);
 
-// 7. Piezas geométricas (alrededor del cubo)
 const pieces = createPieces();
 scene.add(pieces);
 
-// 8. Luces
 const lights = createLights(scene);
 
-// 9. Texturas procedurales + fábrica de materiales
+// ─── Texturas procedurales + fábrica de materiales ────────────────
 const textures = createTextures();
 const buildMaterial = createMaterialFactory(textures);
 
-// 10. Estado compartido: ref para saber si se está arrastrando una pieza
+// ─── Refs compartidas entre módulos ────────────────────────────────
 const draggingRef = { current: false };
+const activeCameraRef = { current: cam };
 
-// 11. Reglas del juego (qué pieza va en qué hueco)
+// ─── Reglas del juego (desacoplado: no conoce física ni UI) ─────────
 const classifierRules = createClassifierRules(panel);
 
-// ─── FÍSICAS (cannon-es) ──────────────────────────────────────────
-// 12. Mundo de físicas con gravedad y materiales de colisión
+// ─── Físicas (cannon-es) ───────────────────────────────────────────
 const physicsWorld = createPhysicsWorld();
-
-// 13. Fábrica de cuerpos rígidos (mapea meshes Three ↔ bodies Cannon)
 const bodyFactory = createBodyFactory(physicsWorld.world, physicsWorld.materials);
 
-// 14. Registrar cuerpos estáticos: piso + paredes del cuarto, paredes del
-//     cubo clasificador y panel perforado.
-//     El panel usa Trimesh para respetar los huecos (las piezas caen por ellos).
-//     Las paredes del cuarto usan minThick=0.5 para evitar tunneling
-//     (son PlaneGeometry, el Box cannon queda muy delgado).
+// Cuerpos estáticos: piso y paredes del cuarto + paredes del clasificador
+// + panel perforado.
 for (const child of room.children) {
     if (!child.isMesh) continue;
     const kind = (child.position.y < 0.5) ? 'ground' : 'room-wall';
     bodyFactory.registerStatic(child, kind);
 }
-
 for (const wall of walls) {
     bodyFactory.registerStatic(wall, 'wall');
 }
 bodyFactory.registerStatic(panel, 'panel');
 
-// 15. Registrar piezas como cuerpos dinámicos con masa
+// Piezas dinámicas con masa
 for (const piece of pieces.children) {
     if (!piece.isMesh) continue;
     bodyFactory.registerPiece(piece, 1.0);
 }
 
-// 16. Sistema de físicas: step + sincronizar meshes
 const physicsSystem = createPhysicsSystem(pieces, bodyFactory, physicsWorld, classifierRules);
 
-// 17. Obstáculos para colisiones de cámara (sigue siendo AABB: la cámara es puntual)
+// ─── Controles ─────────────────────────────────────────────────────
 const obstacles = [...walls, panel, ...pieces.children.filter(c => c.isMesh)];
-
-// 18. Control FPS (WASD + mouse look + confinado al cuarto + obstáculos)
 const fpsControl = setupCameraFPS(cam, renderer, room.userData.bounds, obstacles, draggingRef, inputManager);
 
-// 19. Obstáculos estáticos para el arrastre (solo paredes del clasificador).
-//     Las paredes del cuarto se manejan con roomBounds (son planos,
-//     el AABB 3D no puede retener piezas que cambian de altura).
-//     NO incluir el panel (Trimesh) — las piezas deben atravesarlo para
-//     caer por los huecos. NO incluir piezas — las resuelve cannon.
+// Obstáculos del arrastre: SOLO paredes del clasificador.
+// El panel se excluye para que las piezas atraviesen los huecos; las piezas
+// entre sí las resuelve cannon.
 const dragObstacles = [...walls];
 
-// 20. Ref activa de cámara (para que DragManager use la cámara actual)
-const activeCameraRef = { current: cam };
-
-// 21. Drag de piezas (cinemático en cannon, dinámico al soltar)
 let interfaceCtrl;
 const dragManager = setupDragManager(activeCameraRef, renderer, {
     piecesGroup: pieces,
@@ -111,8 +88,8 @@ const dragManager = setupDragManager(activeCameraRef, renderer, {
     physicsSystem,
     obstacles: dragObstacles,
     roomBounds: room.userData.bounds,
-    classifierTop: 3.0,            // WALL_HEIGHT + PANEL_DEPTH
-    classifierHalf: 2.0,          // OUTER / 2
+    classifierTop: WALL_HEIGHT + PANEL_DEPTH,
+    classifierHalf: OUTER / 2,
     onSelect: (mesh) => {
         if (interfaceCtrl) interfaceCtrl.onPieceSelected(mesh);
     },
@@ -120,17 +97,15 @@ const dragManager = setupDragManager(activeCameraRef, renderer, {
     onDragEnd:   () => { draggingRef.current = false; },
 });
 
-// 22. Interfaz de usuario (HUD + panel)
+// ─── UI + Responsive + Bucle principal ─────────────────────────────
 interfaceCtrl = setupInterface({
     piecesGroup: pieces,
     buildMaterial,
     lights,
 });
 
-// 23. Responsive
 setupResize(cam, renderer);
 
-// 24. Bucle de renderizado con físicas + input + safety net
 setupAnimationLoop({
     scene,
     renderer,

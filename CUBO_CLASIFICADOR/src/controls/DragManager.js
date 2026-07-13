@@ -69,19 +69,9 @@ export function setupDragManager(activeCameraRef, renderer, {
     }
 
     // ─── Clamp a límites del cuarto ──────────────────────────────
-    /**
-     * Margen de seguridad contra las paredes del cuarto.
-     * Las paredes del cuarto usan CANNON.Plane (sin grosor), pero el clamp
-     * del drag debe mantener la pieza dentro del área visible para que
-     * la posición Three y el body Cannon estén siempre alineados.
-     */
+    /** Margen de seguridad contra las paredes del cuarto. */
     const ROOM_MARGIN = 0.5;
 
-    /**
-     * Clampea `pos` para que el AABB de la pieza quede dentro del cuarto.
-     * @param {THREE.Vector3} pos
-     * @returns {THREE.Vector3} — misma referencia, mutada
-     */
     // ─── Colisión contra el panel del clasificador (eje Y) ──────
     /**
      * ¿La pieza está sobre el área del clasificador (en X/Z)?
@@ -94,6 +84,11 @@ export function setupDragManager(activeCameraRef, renderer, {
             && Math.abs(pos.z) < classifierHalf + margin;
     }
 
+    /**
+     * Clampea `pos` para que el AABB de la pieza quede dentro del cuarto.
+     * @param {THREE.Vector3} pos
+     * @returns {THREE.Vector3}
+     */
     function clampToRoom(pos) {
         _pieceBox.setFromObject(selected);
 
@@ -251,9 +246,11 @@ export function setupDragManager(activeCameraRef, renderer, {
             _pieceBox.getSize(_size);
             const halfH = _size.y * 0.5;
 
-            if (classifierRules.isOverOwnHole(selected)) {
-                newPos.y = Math.max(0.3, newPos.y);
-            } else if (isOverClassifier(newPos)) {
+            // NOTA: NO chequeamos isOverOwnHole acá — si lo hiciéramos,
+            // la pieza se teletransportaría a Y=0.3 al pasar sobre su hueco
+            // durante el arrastre, causando un salto brusco. El hueco se
+            // resuelve SOLO en onPointerUp (al soltar).
+            if (isOverClassifier(newPos)) {
                 // Sobre el clasificador pero no sobre su hueco → la base de la
                 // pieza NO puede penetrar el panel. Límite = cara superior del
                 // panel + half-height real de la pieza.
@@ -325,9 +322,8 @@ export function setupDragManager(activeCameraRef, renderer, {
                 _pieceBox.getSize(_size);
                 const halfH = _size.y * 0.5;
 
-                if (classifierRules.isOverOwnHole(selected)) {
-                    pos.y = Math.max(0.3, pos.y);
-                } else if (isOverClassifier(pos)) {
+                // No chequeamos isOverOwnHole acá (misma razón que en drag)
+                if (isOverClassifier(pos)) {
                     pos.y = Math.max(classifierTop + halfH, pos.y);
                 } else {
                     pos.y = Math.max(selected.userData.minY, pos.y);

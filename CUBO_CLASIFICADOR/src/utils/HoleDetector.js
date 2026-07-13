@@ -3,6 +3,8 @@
  * Completamente puras — no dependen del estado de la escena.
  */
 
+import { computeStarPoints } from './geometry.js';
+
 // Tolerancia para que el usuario no necesite precisión milimétrica desde cámara FPS
 export const HOLE_TOLERANCE = 0.1;
 
@@ -70,18 +72,16 @@ export function isInsideHole(sx, sy, cfg) {
             const pts = cfg.hole.points || 4;
             const outerR = cfg.hole.outerR + T;
             const innerR = cfg.hole.innerR + T;
-            const verts = [];
-            for (let i = 0; i < pts * 2; i++) {
-                const r = i % 2 === 0 ? outerR : innerR;
-                const angle = (i / (pts * 2)) * Math.PI * 2 - Math.PI / 2;
-                verts.push({ x: cfg.cx + r * Math.cos(angle), y: cfg.cy + r * Math.sin(angle) });
-            }
+            const verts = computeStarPoints(outerR, innerR, pts)
+                .map(v => ({ x: v.x + cfg.cx, y: v.y + cfg.cy }));
             return pointInPolygon(sx, sy, verts);
         }
         case 'rect': {
             return Math.abs(sx - cfg.cx) < cfg.hole.w / 2 + T
                 && Math.abs(sy - cfg.cy) < cfg.hole.h / 2 + T;
         }
+        default:
+            console.warn(`isInsideHole: forma desconocida "${cfg.shape}"`);
+            return false;
     }
-    return false;
 }

@@ -141,14 +141,6 @@ canvas { display: block; }
 }
 .wfbtn.active { background: #e060c0; color: #0a0010; border-color: #e060c0; }
 
-/* Botones de proyección */
-.projbtn {
-    flex: 1;
-    padding: 6px 4px;
-    text-align: center;
-}
-.projbtn.active { background: #ff7a9c; color: #1a0008; border-color: #ff7a9c; }
-
 /* Hint */
 #hint {
     position: absolute;
