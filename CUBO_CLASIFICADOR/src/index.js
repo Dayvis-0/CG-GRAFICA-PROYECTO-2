@@ -16,7 +16,6 @@ import { setupAnimationLoop }   from './animations/AnimationLoop.js';
 import { createPhysicsWorld }   from './physics/PhysicsWorld.js';
 import { createBodyFactory }    from './physics/BodyFactory.js';
 import { createPhysicsSystem }  from './physics/PhysicsSystem.js';
-import { createClassifierRules } from './game/ClassifierRules.js';
 import { WALL_HEIGHT, PANEL_DEPTH, OUTER } from './data/classifierDimensions.js';
 
 // ─── Input · Escena · Cámara · Renderer ────────────────────────────
@@ -45,15 +44,12 @@ const buildMaterial = createMaterialFactory(textures);
 const draggingRef = { current: false };
 const activeCameraRef = { current: cam };
 
-// ─── Reglas del juego (desacoplado: no conoce física ni UI) ─────────
-const classifierRules = createClassifierRules(panel);
-
 // ─── Físicas (cannon-es) ───────────────────────────────────────────
 const physicsWorld = createPhysicsWorld();
 const bodyFactory = createBodyFactory(physicsWorld.world, physicsWorld.materials);
 
 // Cuerpos estáticos: piso y paredes del cuarto + paredes del clasificador
-// + panel perforado.
+// + panel con Trimesh (huecos físicos reales).
 for (const child of room.children) {
     if (!child.isMesh) continue;
     const kind = (child.position.y < 0.5) ? 'ground' : 'room-wall';
@@ -70,21 +66,19 @@ for (const piece of pieces.children) {
     bodyFactory.registerPiece(piece, 1.0);
 }
 
-const physicsSystem = createPhysicsSystem(pieces, bodyFactory, physicsWorld, classifierRules);
+const physicsSystem = createPhysicsSystem(pieces, bodyFactory, physicsWorld);
 
 // ─── Controles ─────────────────────────────────────────────────────
 const obstacles = [...walls, panel, ...pieces.children.filter(c => c.isMesh)];
 const fpsControl = setupCameraFPS(cam, renderer, room.userData.bounds, obstacles, draggingRef, inputManager);
 
-// Obstáculos del arrastre: SOLO paredes del clasificador.
-// El panel se excluye para que las piezas atraviesen los huecos; las piezas
-// entre sí las resuelve cannon.
+// Obstáculos del arrastre: SOLO paredes del clasificador (el panel Trimesh
+// ya detecta colisiones con huecos reales vía cannon).
 const dragObstacles = [...walls];
 
 let interfaceCtrl;
 const dragManager = setupDragManager(activeCameraRef, renderer, {
     piecesGroup: pieces,
-    classifierRules,
     physicsSystem,
     obstacles: dragObstacles,
     roomBounds: room.userData.bounds,

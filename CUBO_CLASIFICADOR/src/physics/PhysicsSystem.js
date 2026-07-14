@@ -3,9 +3,9 @@ import * as CANNON from 'cannon-es';
 
 /**
  * Avanza el mundo cannon-es por frame y sincroniza meshes con sus bodies.
- * Gestiona modo kinematic (drag) y succión de huecos.
+ * Gestiona modo kinematic (drag).
  */
-export function createPhysicsSystem(piecesGroup, bodyFactory, physicsWorld, classifierRules) {
+export function createPhysicsSystem(piecesGroup, bodyFactory, physicsWorld) {
     /** @type {Set<THREE.Mesh>} */
     const kinematicPieces = new Set();
 

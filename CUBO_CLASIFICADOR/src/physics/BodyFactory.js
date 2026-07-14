@@ -144,15 +144,10 @@ export function createBodyFactory(world, materials) {
         let shape;
 
         if (kind === 'panel') {
-            // Box plano en lugar de Trimesh.
-            // Cannon-es solo resuelve Sphere↔Trimesh de forma fiable; Box, Cylinder
-            // y Cone atraviesan el Trimesh por el algoritmo GJK/SAT de Cannon.
-            // Los huecos se manejan LÓGICAMENTE: onPointerUp teleporta la pieza
-            // a Y=0.3 cuando está sobre su hueco → no necesita hueco físico real.
-            const bbox = new THREE.Box3().setFromObject(mesh);
-            const size = new THREE.Vector3();
-            bbox.getSize(size);
-            shape = new CANNON.Box(new CANNON.Vec3(size.x / 2, size.y / 2, size.z / 2));
+            // Trimesh real desde la geometría Three.js que YA tiene los huecos
+            // triangulados (ExtrudeGeometry con holes). Las piezas caen por
+            // gravedad a través de los huecos sin teleport ni lógica especial.
+            shape = buildTrimeshFromGeometry(mesh.geometry);
         } else if (kind === 'ground') {
             // CANNON.Plane es un piso infinito horizontal → más estable que un Box de altura 0
             shape = new CANNON.Plane();
@@ -187,15 +182,14 @@ export function createBodyFactory(world, materials) {
         mesh.updateMatrixWorld(true);
 
         if (kind === 'panel') {
-            // El panel usa ExtrudeGeometry con rotation.x=-PI/2, por lo que su
-            // origen (mesh.position) NO coincide con el centro geométrico del AABB.
-            // Usamos el centro del AABB world-space y quaternion identidad
-            // (el Box ya está correctamente dimensionado en world-space axes).
-            const bbox = new THREE.Box3().setFromObject(mesh);
-            const center = new THREE.Vector3();
-            bbox.getCenter(center);
-            body.position.set(center.x, center.y, center.z);
-            // quaternion identidad: el Box ya refleja la orientación world-space
+            // El Trimesh usa vertices en local-space del geometry, con la
+            // posición y rotación world del mesh para ubicarlo correctamente.
+            const wp = new THREE.Vector3();
+            mesh.getWorldPosition(wp);
+            body.position.set(wp.x, wp.y, wp.z);
+            const wq = new THREE.Quaternion();
+            mesh.getWorldQuaternion(wq);
+            body.quaternion.set(wq.x, wq.y, wq.z, wq.w);
         } else {
             const wp = new THREE.Vector3();
             mesh.getWorldPosition(wp);

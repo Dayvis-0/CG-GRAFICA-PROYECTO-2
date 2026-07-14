@@ -7,7 +7,6 @@ import * as THREE from 'three';
  */
 export function setupDragManager(activeCameraRef, renderer, {
     piecesGroup,
-    classifierRules,
     physicsSystem,
     roomBounds = { half: 7, height: 8 },
     obstacles = [],
@@ -246,14 +245,11 @@ export function setupDragManager(activeCameraRef, renderer, {
             _pieceBox.getSize(_size);
             const halfH = _size.y * 0.5;
 
-            // NOTA: NO chequeamos isOverOwnHole acá — si lo hiciéramos,
-            // la pieza se teletransportaría a Y=0.3 al pasar sobre su hueco
-            // durante el arrastre, causando un salto brusco. El hueco se
-            // resuelve SOLO en onPointerUp (al soltar).
+            // La pieza NO debe penetrar el panel durante el arrastre (kinematic).
+            // El Trimesh de cannon-es resuelve las colisiones al soltar la pieza.
             if (isOverClassifier(newPos)) {
-                // Sobre el clasificador pero no sobre su hueco → la base de la
-                // pieza NO puede penetrar el panel. Límite = cara superior del
-                // panel + half-height real de la pieza.
+                // Sobre el clasificador: la base de la pieza no puede penetrar
+                // el panel. Límite = cara superior + half-height real.
                 newPos.y = Math.max(classifierTop + halfH, newPos.y);
             } else {
                 newPos.y = Math.max(selected.userData.minY, newPos.y);
@@ -275,26 +271,9 @@ export function setupDragManager(activeCameraRef, renderer, {
 
     function onPointerUp() {
         if (selected) {
-            // Calcular el half-size real de la pieza para saber cuánto margen
-            // necesitamos sobre el panel. Sin esto, el Trimesh de Cannon
-            // detecta penetración y eyecta la pieza "por todos lados".
-            _pieceBox.setFromObject(selected);
-            _pieceBox.getSize(_size);
-            const halfH = _size.y * 0.5;
-
-            const pos = selected.position.clone();
-            if (classifierRules.isOverOwnHole(selected)) {
-                // Sobre su hueco → posicionar justo debajo del panel para que caiga
-                pos.y = Math.min(pos.y, 0.3);
-            } else if (isOverClassifier(pos)) {
-                // Sobre el clasificador pero NO sobre su hueco:
-                // Solo subir si la pieza estuviera POR DEBAJO del margen seguro
-                // (penetrando el Trimesh). Si ya está más arriba, soltarla donde está.
-                // Antes era una asignación directa → forzaba un snap hacia abajo
-                // aunque la tuvieras a Y=5, causando la caída brusca.
-                pos.y = Math.max(pos.y, classifierTop + halfH + 0.05);
-            }
-            selected.position.copy(pos);
+            // El panel ahora es un Trimesh con huecos reales: la pieza cae
+            // naturalmente por gravedad si está sobre un hueco, o se apoya
+            // sobre la superficie si está sobre zona sólida. Sin teleport.
             physicsSystem.setKinematic(selected, false);
             selected = null;
         }
@@ -322,7 +301,7 @@ export function setupDragManager(activeCameraRef, renderer, {
                 _pieceBox.getSize(_size);
                 const halfH = _size.y * 0.5;
 
-                // No chequeamos isOverOwnHole acá (misma razón que en drag)
+                // Mantener sobre la superficie del panel durante arrastre kinemático
                 if (isOverClassifier(pos)) {
                     pos.y = Math.max(classifierTop + halfH, pos.y);
                 } else {
