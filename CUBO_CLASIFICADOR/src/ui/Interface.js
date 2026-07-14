@@ -76,9 +76,8 @@ export function setupInterface({
         document.getElementById('wf-btn').textContent = st.state.wireframe ? 'Wireframe: ON' : 'Wireframe: OFF';
     }
 
-    // ── Reconstruir material ──
-    function rebuildMaterial() {
-        const st = getMeshState();
+    // ── Aplicar estado actualizado al mesh ──
+    function applyState(st) {
         if (!st) return;
         st.mesh.material = buildMaterial(st.state.material, st.def.color, st.state.texture, st.state.wireframe);
         st.mesh.userData._matType = st.state.material;
@@ -93,10 +92,11 @@ export function setupInterface({
     function onStateChange(propKey, valueOrFn) {
         if (!selectedKey) return;
         const st = getMeshState();
+        if (!st) return;
         st.state[propKey] = typeof valueOrFn === 'function'
             ? valueOrFn(st.state[propKey])
             : valueOrFn;
-        rebuildMaterial();
+        applyState(st);
     }
 
     // ─── SELECCIÓN ──────────────────────────────
