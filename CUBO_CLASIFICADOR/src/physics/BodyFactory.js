@@ -2,6 +2,105 @@ import * as CANNON from 'cannon-es';
 import * as THREE from 'three';
 
 /**
+ * Verifica si un punto (sx, sy) en el espacio del Shape cae dentro de algún hueco.
+ * Usa halfCell como margen POSITIVO: el hueco físico se agranda ligeramente
+ * para compensar la intrusión de las celdas vecinas. Así el hueco efectivo
+ * coincide con el visual. Las celdas en el borde del hueco se eliminan.
+ */
+function isInsideAnyHole(sx, sy, holeConfigs, halfCell) {
+    for (const cfg of holeConfigs) {
+        const m = halfCell; // margen + → agranda el hueco para compensar intrusión de celdas vecinas
+        switch (cfg.shape) {
+            case 'circle': {
+                const dx = sx - cfg.cx, dy = sy - cfg.cy;
+                const r = cfg.hole.r + m;
+                if (dx * dx + dy * dy < r * r) return true;
+                break;
+            }
+            case 'square': {
+                const h = cfg.hole.side / 2 + m;
+                if (Math.abs(sx - cfg.cx) < h && Math.abs(sy - cfg.cy) < h) return true;
+                break;
+            }
+            case 'triangle': {
+                const r = cfg.hole.r + m;
+                const s32 = 0.86602540378;
+                const ax = cfg.cx, ay = cfg.cy + r;
+                const bx = cfg.cx + r * s32, by = cfg.cy - r / 2;
+                const cx2 = cfg.cx - r * s32, cy2 = cfg.cy - r / 2;
+                if (pointInTriangle(sx, sy, ax, ay, bx, by, cx2, cy2)) return true;
+                break;
+            }
+            case 'diamond': {
+                const rx = cfg.hole.rx + m, ry = cfg.hole.ry + m;
+                if (Math.abs(sx - cfg.cx) / rx + Math.abs(sy - cfg.cy) / ry < 1) return true;
+                break;
+            }
+            case 'hexagon': {
+                const r = cfg.hole.r + m;
+                for (let i = 0; i < 6; i++) {
+                    const a1 = (i / 6) * Math.PI * 2 - Math.PI / 2;
+                    const a2 = ((i + 1) / 6) * Math.PI * 2 - Math.PI / 2;
+                    const ax = cfg.cx + r * Math.cos(a1), ay = cfg.cy + r * Math.sin(a1);
+                    const bx = cfg.cx + r * Math.cos(a2), by = cfg.cy + r * Math.sin(a2);
+                    if (pointInTriangle(sx, sy, cfg.cx, cfg.cy, ax, ay, bx, by)) return true;
+                }
+                break;
+            }
+            case 'star': {
+                const pts = cfg.hole.points || 4;
+                const outerR = cfg.hole.outerR + m;
+                const innerR = cfg.hole.innerR + m;
+                // Pre-filter por bounding box (outerR ya incluye m)
+                if (Math.abs(sx - cfg.cx) < outerR && Math.abs(sy - cfg.cy) < outerR) {
+                    // Punto está dentro del bounding box — refinamos con point-in-polygon
+                    const verts = computeStarPoints(outerR, innerR, pts)
+                        .map(v => ({ x: v.x + cfg.cx, y: v.y + cfg.cy }));
+                    if (pointInPolygon(sx, sy, verts)) return true;
+                }
+                break;
+            }
+            case 'rect': {
+                if (Math.abs(sx - cfg.cx) < cfg.hole.w / 2 + m
+                    && Math.abs(sy - cfg.cy) < cfg.hole.h / 2 + m) return true;
+                break;
+            }
+        }
+    }
+    return false;
+}
+
+// ─── Helpers geométricos locales (evitan depender de HoleDetector) ───
+function pointInTriangle(px, py, ax, ay, bx, by, cx, cy) {
+    const d = (by - cy) * (ax - cx) + (cx - bx) * (ay - cy);
+    const a = ((by - cy) * (px - cx) + (cx - bx) * (py - cy)) / d;
+    const b = ((cy - ay) * (px - cx) + (cx - bx) * (py - cy)) / d;
+    const c = 1 - a - b;
+    return a >= 0 && b >= 0 && c >= 0;
+}
+
+function pointInPolygon(px, py, verts) {
+    let inside = false;
+    for (let i = 0, j = verts.length - 1; i < verts.length; j = i++) {
+        const xi = verts[i].x, yi = verts[i].y;
+        const xj = verts[j].x, yj = verts[j].y;
+        if ((yi > py) !== (yj > py) && px < (xj - xi) * (py - yi) / (yj - yi) + xi) inside = !inside;
+    }
+    return inside;
+}
+
+/** Genera puntos de estrella para detección de hueco (copia local de geometry.js) */
+function computeStarPoints(outerR, innerR, points) {
+    const verts = [];
+    for (let i = 0; i < points * 2; i++) {
+        const angle = (i / (points * 2)) * Math.PI * 2 - Math.PI / 2;
+        const r = i % 2 === 0 ? outerR : innerR;
+        verts.push({ x: r * Math.cos(angle), y: r * Math.sin(angle) });
+    }
+    return verts;
+}
+
+/**
  * Fábrica de cuerpos rígidos cannon-es a partir de meshes Three.
  * Mantiene el mapeo mesh ↔ body en un Map, accesible vía getBody(mesh).
  */
@@ -49,8 +148,13 @@ export function createBodyFactory(world, materials) {
                 return new CANNON.Cylinder(r, r, h, segments);
             }
             case 'star': {
-                // La estrella es cóncava → Trimesh para representar indentaciones
-                return buildTrimeshFromGeometry(mesh.geometry);
+                // La estrella es cóncava, pero Trimesh no colisiona contra Box
+                // (que es lo que usa el panel ahora). Usamos el bounding box
+                // como aproximación convexa para que al menos se apoye sobre
+                // la superficie del panel.
+                return new CANNON.Box(new CANNON.Vec3(
+                    size.x / 2, size.y / 2, size.z / 2,
+                ));
             }
             default: {
                 console.warn(`Unknown pieceType "${type}", usando Box fallback`);
@@ -128,7 +232,7 @@ export function createBodyFactory(world, materials) {
 
     /**
      * Registra un mesh estático (mass = 0).
-     *  - 'panel':     Trimesh → respeta los huecos del clasificador
+     *  - 'panel':     Grilla de Box → respeta los huecos del clasificador (compatible con todas las formas)
      *  - 'ground':    Plane  → colisión de piso estable
      *  - 'room-wall': Plane  → paredes del cuarto (PlaneGeometry, sin grosor)
      *  - 'wall':      Box    → paredes del clasificador (BoxGeometry con volumen real)
@@ -144,10 +248,52 @@ export function createBodyFactory(world, materials) {
         let shape;
 
         if (kind === 'panel') {
-            // Trimesh real desde la geometría Three.js que YA tiene los huecos
-            // triangulados (ExtrudeGeometry con holes). Las piezas caen por
-            // gravedad a través de los huecos sin teleport ni lógica especial.
-            shape = buildTrimeshFromGeometry(mesh.geometry);
+            // ─── Panel con huecos: grilla de Box bodies ────────────────
+            // CANNON.Trimesh solo soporta colisiones Sphere vs Trimesh y
+            // Plane vs Trimesh en el narrowphase. Las demás formas (Box,
+            // Cylinder/Convex) NO colisionan contra Trimesh, así que las
+            // piezas se traspasan. En vez de Trimesh, construimos una
+            // grilla de CANNON.Box que cubre las partes sólidas del panel,
+            // dejando huecos vacíos. Box es compatible con TODAS las formas.
+            const bbox = new THREE.Box3().setFromObject(mesh);
+            const center = new THREE.Vector3();
+            bbox.getCenter(center);
+            const bsize = new THREE.Vector3();
+            bbox.getSize(bsize);
+
+            // Creamos UN solo body estático compuesto (varios shapes)
+            const compoundBody = new CANNON.Body({
+                mass: 0,
+                material: materialForKind(kind),
+                type: CANNON.Body.STATIC,
+                position: new CANNON.Vec3(center.x, center.y, center.z),
+            });
+
+            const halfExtent = bsize.x / 2; // mitad del panel en X/Z (en shape space ≈ world X/Z)
+            const cellSize = opts.gridCellSize || 0.25;
+            const halfCell = cellSize / 2;
+            const halfDepth = bsize.y / 2; // grosor del panel (Y en world space)
+            const holeConfigs = opts.holeConfigs || [];
+
+            // Iteramos en shape space (XY del Shape original)
+            // shape (sx, sy) → world offset (sx, 0, -sy) relativo al body center
+            for (let sx = -halfExtent + halfCell; sx < halfExtent; sx += cellSize) {
+                for (let sy = -halfExtent + halfCell; sy < halfExtent; sy += cellSize) {
+                    if (isInsideAnyHole(sx, sy, holeConfigs, halfCell)) continue;
+                    const halfW = cellSize / 2;
+                    const halfH = cellSize / 2;
+                    compoundBody.addShape(
+                        new CANNON.Box(new CANNON.Vec3(halfW, halfDepth, halfH)),
+                        new CANNON.Vec3(sx, 0, -sy),
+                    );
+                }
+            }
+
+            world.addBody(compoundBody);
+            // Guardamos referencia en el map para consistencia (aunque nadie consulta el panel)
+            meshToBody.set(mesh, compoundBody);
+            mesh.userData.body = compoundBody;
+            return compoundBody;
         } else if (kind === 'ground') {
             // CANNON.Plane es un piso infinito horizontal → más estable que un Box de altura 0
             shape = new CANNON.Plane();
@@ -180,25 +326,12 @@ export function createBodyFactory(world, materials) {
 
         // Sincronizar posición + rotación del mesh → body (world space)
         mesh.updateMatrixWorld(true);
-
-        if (kind === 'panel') {
-            // El Trimesh usa vertices en local-space del geometry, con la
-            // posición y rotación world del mesh para ubicarlo correctamente.
-            const wp = new THREE.Vector3();
-            mesh.getWorldPosition(wp);
-            body.position.set(wp.x, wp.y, wp.z);
-            const wq = new THREE.Quaternion();
-            mesh.getWorldQuaternion(wq);
-            body.quaternion.set(wq.x, wq.y, wq.z, wq.w);
-        } else {
-            const wp = new THREE.Vector3();
-            mesh.getWorldPosition(wp);
-            body.position.set(wp.x, wp.y, wp.z);
-
-            const wq = new THREE.Quaternion();
-            mesh.getWorldQuaternion(wq);
-            body.quaternion.set(wq.x, wq.y, wq.z, wq.w);
-        }
+        const wp = new THREE.Vector3();
+        mesh.getWorldPosition(wp);
+        body.position.set(wp.x, wp.y, wp.z);
+        const wq = new THREE.Quaternion();
+        mesh.getWorldQuaternion(wq);
+        body.quaternion.set(wq.x, wq.y, wq.z, wq.w);
 
         world.addBody(body);
 

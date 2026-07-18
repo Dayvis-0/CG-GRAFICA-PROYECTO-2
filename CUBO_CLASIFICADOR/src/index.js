@@ -16,6 +16,7 @@ import { setupAnimationLoop }   from './animations/AnimationLoop.js';
 import { createPhysicsWorld }   from './physics/PhysicsWorld.js';
 import { createBodyFactory }    from './physics/BodyFactory.js';
 import { createPhysicsSystem }  from './physics/PhysicsSystem.js';
+import { HOLE_CONFIGS } from './data/holeConfigs.js';
 import { WALL_HEIGHT, PANEL_DEPTH, OUTER } from './data/classifierDimensions.js';
 
 // ─── Input · Escena · Cámara · Renderer ────────────────────────────
@@ -58,7 +59,7 @@ for (const child of room.children) {
 for (const wall of walls) {
     bodyFactory.registerStatic(wall, 'wall');
 }
-bodyFactory.registerStatic(panel, 'panel');
+bodyFactory.registerStatic(panel, 'panel', { holeConfigs: HOLE_CONFIGS });
 
 // Piezas dinámicas con masa
 for (const piece of pieces.children) {

@@ -110,10 +110,9 @@ CUBO_CLASIFICADOR/
 | **Sombras** | Directional light con shadow map 1024×1024, PCFSoft |
 | **Colisión de cámara** | AABB contra paredes del cuarto y del clasificador |
 | **Colisión de drag** | AABB por eje (X → Z → Y) para deslizamiento natural |
-| **Panel perforado** | `CANNON.Box` (no Trimesh). Los huecos se manejan **lógicamente** desde `onPointerUp` |
+| **Panel perforado** | `CANNON.Trimesh` construido desde la geometría Three.js con huecos reales (`ExtrudeGeometry` + `shape.holes`). Las piezas caen por **gravedad física real** a través de los huecos |
 | **Anti-tunneling** | `limitStep()` limita el desplazamiento al tamaño del AABB de la pieza |
-| **Drop en hueco** | Al soltar la pieza sobre su hueco correcto, `onPointerUp` la posiciona en Y=0.3 (dentro del cubo). La gravedad de cannon-es se encarga del resto |
-| **Drag trail** | Las 8 últimas posiciones del drag se trackean para calcular la velocidad de soltado (suave y natural) |
+| **Drop en hueco** | `onPointerUp` solo hace `setKinematic(false)`. La pieza cae **naturalmente** a través del Trimesh del panel — **no hay posicionamiento en Y=0.3** |
 | **Fixed timestep** | `world.fixedStep(1/240, dt)` con dt máximo 1/30 para evitar espiral de muerte |
 | **Sleep** | Cuerpos cannon-es entran en sleep para ahorrar CPU |
 
