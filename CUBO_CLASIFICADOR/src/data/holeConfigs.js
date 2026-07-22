@@ -4,11 +4,11 @@
 
 /** @type {Array<{
  *   label:       string,
- *   shape:       'circle'|'square'|'triangle'|'diamond'|'rect',
+ *   shape:       'circle'|'square'|'triangle'|'diamond'|'hexagon'|'star'|'rect',
  *   cx:          number,
  *   cy:          number,
  *   hole:        object,
- *   pieceType:   'sphere'|'box'|'cone'|'cylinder',
+ *   pieceType:   'sphere'|'box'|'cone'|'cylinder'|'star',
  *   pieceArgs:   number[],        // argumentos para el constructor de la geometría
  *   pieceColor:  number,
  *   piecePos:    {x:number, z:number},

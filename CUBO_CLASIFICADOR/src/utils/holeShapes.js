@@ -76,7 +76,7 @@ export function starHole(cx, cy, outerR, innerR, points = 4) {
 export function hexagonHole(cx, cy, r) {
     const path = new Path();
     for (let i = 0; i < 6; i++) {
-        const angle = (i / 6) * Math.PI * 2 - Math.PI / 2;
+        const angle = Math.PI / 2 - (i / 6) * Math.PI * 2;
         const x = cx + r * Math.cos(angle);
         const y = cy + r * Math.sin(angle);
         if (i === 0) path.moveTo(x, y);

@@ -39,8 +39,8 @@ function isInsideAnyHole(sx, sy, holeConfigs, halfCell) {
             case 'hexagon': {
                 const r = cfg.hole.r + m;
                 for (let i = 0; i < 6; i++) {
-                    const a1 = (i / 6) * Math.PI * 2 - Math.PI / 2;
-                    const a2 = ((i + 1) / 6) * Math.PI * 2 - Math.PI / 2;
+                    const a1 = Math.PI / 2 - (i / 6) * Math.PI * 2;
+                    const a2 = Math.PI / 2 - ((i + 1) / 6) * Math.PI * 2;
                     const ax = cfg.cx + r * Math.cos(a1), ay = cfg.cy + r * Math.sin(a1);
                     const bx = cfg.cx + r * Math.cos(a2), by = cfg.cy + r * Math.sin(a2);
                     if (pointInTriangle(sx, sy, cfg.cx, cfg.cy, ax, ay, bx, by)) return true;
