@@ -1,3 +1,5 @@
+import { HOLE_CONFIGS } from '../data/holeConfigs.js';
+
 /**
  * Configura el HUD y panel de control del Cubo Clasificador.
  *
@@ -16,15 +18,13 @@ export function setupInterface({
 
     let selectedKey = null;
 
+    // ── Puntajes por pieza clasificada ──
+    const scores = {};
+    for (const cfg of HOLE_CONFIGS) {
+        scores[cfg.label] = 0;
+    }
+
     // ── Helpers ──
-    function capitalize(s) {
-        return s.charAt(0).toUpperCase() + s.slice(1);
-    }
-
-    function textureLabel(key) {
-        return { none: 'Ninguna', stripes: 'Rayas', dots: 'Lunares', gradient: 'Degradado', wood: 'Madera' }[key] || key;
-    }
-
     function getMeshState() {
         if (!selectedKey) return null;
         const mesh = labelToMesh[selectedKey];
@@ -40,13 +40,12 @@ export function setupInterface({
         };
     }
 
-    // ── HUD ──
+    // ── HUD: puntajes ──
     function updateHUD() {
-        const st = getMeshState();
-        document.getElementById('hud-obj').textContent = st ? st.def.label : '—';
-        document.getElementById('hud-mat').textContent = st ? capitalize(st.state.material) : '—';
-        document.getElementById('hud-tex').textContent = st ? textureLabel(st.state.texture) : '—';
-        document.getElementById('hud-wf').textContent = st ? (st.state.wireframe ? 'Sí' : 'No') : '—';
+        for (const cfg of HOLE_CONFIGS) {
+            const el = document.getElementById(`score-${cfg.label}`);
+            if (el) el.textContent = scores[cfg.label];
+        }
     }
 
     // ── Panel ──
@@ -82,13 +81,10 @@ export function setupInterface({
         st.mesh.material = buildMaterial(st.state.material, st.def.color, st.state.texture, st.state.wireframe);
         st.mesh.userData._matType = st.state.material;
         st.mesh.userData._texKey = st.state.texture;
-        updateHUD();
         updatePanelSelection();
     }
 
     // ── Helper genérico para cambios de estado del material ─────
-    // Reemplaza el patrón repetitivo de matbtn / texbtn / wfbtn.
-    // Acepta un valor directo o una función (prev => next) para toggles.
     function onStateChange(propKey, valueOrFn) {
         if (!selectedKey) return;
         const st = getMeshState();
@@ -100,21 +96,17 @@ export function setupInterface({
     }
 
     // ─── SELECCIÓN ──────────────────────────────
-    // 1) Callback desde DragManager (click en 3D)
     function onPieceSelected(mesh) {
         if (mesh && mesh.userData.label && labelToMesh[mesh.userData.label]) {
             selectedKey = mesh.userData.label;
         } else {
             selectedKey = null;
         }
-        updateHUD();
         updatePanelSelection();
     }
 
-    // 2) Botones del panel
     function selectByLabel(label) {
         selectedKey = label;
-        updateHUD();
         updatePanelSelection();
     }
 
@@ -130,7 +122,7 @@ export function setupInterface({
         btnContainer.appendChild(btn);
     });
 
-    // ─── PANEL: Material / Textura / Wireframe (DRY via onStateChange) ──
+    // ─── PANEL: Material / Textura / Wireframe ──
     document.querySelectorAll('.matbtn').forEach(btn => {
         btn.onclick = () => onStateChange('material', btn.dataset.mat);
     });
@@ -152,9 +144,27 @@ export function setupInterface({
         };
     });
 
-    // ─── Inicializar HUD ────────────────────────
+    // ─── Construir filas de puntajes en el HUD ──
+    const scoresContainer = document.getElementById('hud-scores');
+    for (const cfg of HOLE_CONFIGS) {
+        const row = document.createElement('div');
+        row.className = 'row';
+        row.innerHTML = `${cfg.label}: <span class="status" id="score-${cfg.label}">0</span>`;
+        scoresContainer.appendChild(row);
+    }
+
+    // ─── Inicializar ────────────────────────────
     updateHUD();
     updatePanelSelection();
 
-    return { onPieceSelected };
+    return {
+        onPieceSelected,
+        /** Incrementa el puntaje de una pieza clasificada correctamente */
+        onPieceClassified(label) {
+            if (scores[label] !== undefined) {
+                scores[label]++;
+                updateHUD();
+            }
+        },
+    };
 }

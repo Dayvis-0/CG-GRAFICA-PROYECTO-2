@@ -25,7 +25,14 @@ export function createInputManager() {
     let locked = false;
 
     // ─── Teclado ──────────────────────────────────────────────────
+    function isInputField(el) {
+        return el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable;
+    }
+
     window.addEventListener('keydown', (e) => {
+        // No interceptar si el usuario está escribiendo en un campo de texto
+        if (isInputField(e.target)) return;
+
         keys[e.key] = true;
 
         // Fallback por código físico
@@ -35,6 +42,8 @@ export function createInputManager() {
     });
 
     window.addEventListener('keyup', (e) => {
+        if (isInputField(e.target)) return;
+
         keys[e.key] = false;
         if (CODE_TO_KEY[e.code]) keys[CODE_TO_KEY[e.code]] = false;
     });

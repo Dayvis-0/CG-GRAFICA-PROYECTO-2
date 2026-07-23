@@ -46,6 +46,17 @@ const buildMaterial = createMaterialFactory(textures);
 const draggingRef = { current: false };
 const activeCameraRef = { current: cam };
 
+// ─── Control de clasificación (evita doble conteo) ─────────────────
+const classifiedLabels = new Set();
+function tryClassify(mesh) {
+    if (!mesh || classifiedLabels.has(mesh.userData.label)) return;
+    if (rules && rules.isOverOwnHole(mesh)) {
+        classifiedLabels.add(mesh.userData.label);
+        if (interfaceCtrl) interfaceCtrl.onPieceClassified(mesh.userData.label);
+        console.log(`✅ ¡${mesh.userData.label} clasificado!`);
+    }
+}
+
 // ─── Físicas (cannon-es) ───────────────────────────────────────────
 const physicsWorld = createPhysicsWorld();
 const bodyFactory = createBodyFactory(physicsWorld.world, physicsWorld.materials);
@@ -96,9 +107,7 @@ const dragManager = setupDragManager(activeCameraRef, renderer, {
     onDragEnd:   (mesh) => {
         // Delay de 120ms para evitar que el click post-suelte active el pointer lock
         setTimeout(() => { draggingRef.current = false; }, 120);
-        if (mesh && rules.isOverOwnHole(mesh)) {
-            console.log(`✅ ¡${mesh.userData.label} encajó correctamente!`);
-        }
+        tryClassify(mesh);
     },
 });
 
@@ -121,4 +130,28 @@ setupAnimationLoop({
     inputManager,
     dragManager,
     roomBounds: room.userData.bounds,
+    onPostPhysics: () => {
+        for (const child of pieces.children) {
+            if (!child.isMesh) continue;
+            const label = child.userData.label;
+            if (classifiedLabels.has(label)) continue;
+            // Ya no está siendo arrastrada + está sobre su hueco → clasificar
+            if (child.position.y < WALL_HEIGHT + PANEL_DEPTH) {
+                tryClassify(child);
+            }
+        }
+    },
+});
+
+// ─── Mostrar formulario de nombre ────────────────────────────────────
+document.getElementById('loading-phase').classList.add('hidden');
+document.getElementById('username-phase').classList.remove('hidden');
+document.getElementById('username-input').focus();
+
+document.getElementById('username-form').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const name = document.getElementById('username-input').value.trim() || 'Jugador';
+    document.getElementById('hud-title').textContent = name.toUpperCase();
+    document.getElementById('loading-overlay').classList.add('hidden');
+    console.log(`👤 Bienvenido, ${name}`);
 });

@@ -1,6 +1,89 @@
 html, body { margin: 0; padding: 0; overflow: hidden; background: #0a0a12; font-family: 'Courier New', monospace; }
 canvas { display: block; }
 
+/* ── Loading Overlay ── */
+#loading-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: #0a0a12;
+    color: #5be3ff;
+    transition: opacity 0.6s ease;
+}
+#loading-overlay.hidden {
+    opacity: 0;
+    pointer-events: none;
+}
+.loader {
+    width: 48px;
+    height: 48px;
+    border: 4px solid #1f3d42;
+    border-top-color: #5be3ff;
+    border-radius: 50%;
+    animation: spin 0.9s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.loading-text {
+    margin-top: 20px;
+    font-size: 16px;
+    letter-spacing: 2px;
+}
+.loading-sub {
+    margin-top: 6px;
+    font-size: 11px;
+    color: #6c8b90;
+}
+#loading-phase.hidden,
+#username-phase.hidden {
+    display: none;
+}
+/* ── Formulario de usuario ── */
+#username-form {
+    margin-top: 18px;
+    display: flex;
+    gap: 8px;
+}
+#username-input {
+    background: #11242a;
+    border: 1px solid #2a6f7a;
+    border-radius: 4px;
+    padding: 8px 12px;
+    font-family: 'Courier New', monospace;
+    font-size: 14px;
+    color: #d7f9ff;
+    outline: none;
+    width: 180px;
+    transition: 0.15s;
+}
+#username-input:focus {
+    border-color: #5be3ff;
+    box-shadow: 0 0 8px rgba(91,227,255,0.25);
+}
+#username-input::placeholder {
+    color: #4a6a70;
+}
+#username-btn {
+    background: #5be3ff;
+    border: none;
+    border-radius: 4px;
+    padding: 8px 16px;
+    font-family: 'Courier New', monospace;
+    font-size: 13px;
+    font-weight: bold;
+    color: #061014;
+    cursor: pointer;
+    transition: 0.15s;
+    letter-spacing: 1px;
+}
+#username-btn:hover {
+    background: #7feaff;
+    box-shadow: 0 0 12px rgba(91,227,255,0.4);
+}
+
 /* ── HUD ── */
 #hud {
     position: absolute;
@@ -16,14 +99,16 @@ canvas { display: block; }
     min-width: 250px;
     backdrop-filter: blur(4px);
 }
-#hud h1 {
-    margin: 0 0 8px 0;
-    font-size: 14px;
+#hud-title {
+    margin: 0 0 10px 0;
+    font-size: 18px;
     color: #5be3ff;
-    letter-spacing: 1px;
+    letter-spacing: 2px;
+    border-bottom: 1px solid #1f3d42;
+    padding-bottom: 6px;
 }
 #hud .status { color: #9be8a0; font-weight: bold; }
-#hud .row { margin-top: 4px; }
+#hud .row { margin-top: 5px; font-size: 12px; }
 
 /* ── PANEL ── */
 #panel {
@@ -140,6 +225,20 @@ canvas { display: block; }
     padding: 6px 14px;
 }
 .wfbtn.active { background: #e060c0; color: #0a0010; border-color: #e060c0; }
+
+/* Reset */
+#reset-btn {
+    display: block;
+    width: 100%;
+    padding: 8px 10px;
+    text-align: center;
+    font-size: 12px;
+    background: #3a1a2a;
+    border-color: #a04060;
+    color: #ffa0c0;
+    margin-top: 4px;
+}
+#reset-btn:hover { background: #5a2030; border-color: #e06090; }
 
 /* Hint */
 #hint {

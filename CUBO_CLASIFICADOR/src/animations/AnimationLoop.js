@@ -14,6 +14,7 @@ import * as CANNON from 'cannon-es';
  * @param {object}                opts.inputManager
  * @param {object}                opts.dragManager
  * @param {{ half: number, height: number }} opts.roomBounds
+ * @param {function}                        opts.onPostPhysics  — callback tras físicas (opcional)
  */
 export function setupAnimationLoop({
     scene,
@@ -25,6 +26,7 @@ export function setupAnimationLoop({
     inputManager,
     dragManager,
     roomBounds,
+    onPostPhysics,
 }) {
     // ─── Reusables para clamp post-física ────────────────────────
     const _box    = new THREE.Box3();
@@ -108,7 +110,10 @@ export function setupAnimationLoop({
         //     (evita que tunneling o errores del solver las saquen del recinto)
         clampToRoomBounds(draggedMesh);
 
-        // 4. Movimiento con flechas (polling desde InputManager)
+        // 4. Callback post-física (clasificación, etc.)
+        if (onPostPhysics) onPostPhysics(draggedMesh);
+
+        // 5. Movimiento con flechas (polling desde InputManager)
         if (draggedMesh) {
             const step = 0.08;
             if (inputManager.isDown('ArrowUp'))    dragManager.moveSelectedBy( 0, -step);
@@ -117,7 +122,7 @@ export function setupAnimationLoop({
             if (inputManager.isDown('ArrowRight')) dragManager.moveSelectedBy( step,  0);
         }
 
-        // 5. Render
+        // 6. Render
         renderer.render(scene, activeCameraRef.current);
     }
 

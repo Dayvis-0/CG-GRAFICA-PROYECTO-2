@@ -20,13 +20,29 @@
 </head>
 <body>
 
+<!-- Loading overlay -->
+<div id="loading-overlay">
+  <!-- Fase 1: cargando -->
+  <div id="loading-phase">
+    <div class="loader"></div>
+    <div class="loading-text">Cargando...</div>
+    <div class="loading-sub">Descargando recursos 3D</div>
+  </div>
+  <!-- Fase 2: nombre de usuario -->
+  <div id="username-phase" class="hidden">
+    <div class="loading-text">👤 NOMBRE DE USUARIO</div>
+    <div class="loading-sub">Ingresá tu nombre para comenzar</div>
+    <form id="username-form">
+      <input type="text" id="username-input" placeholder="Tu nombre..." maxlength="20" autocomplete="off">
+      <button type="submit" id="username-btn">JUGAR</button>
+    </form>
+  </div>
+</div>
+
 <!-- HUD -->
 <div id="hud">
-  <h1>■ CUBO CLASIFICADOR</h1>
-  <div class="row">Objeto: <span class="status" id="hud-obj">—</span></div>
-  <div class="row">Material: <span class="status" id="hud-mat">Standard</span></div>
-  <div class="row">Textura: <span class="status" id="hud-tex">Ninguna</span></div>
-  <div class="row">Wireframe: <span class="status" id="hud-wf">No</span></div>
+  <h1 id="hud-title">■ CUBO CLASIFICADOR</h1>
+  <div id="hud-scores"></div>
 </div>
 
 <!-- Panel de control -->
@@ -52,6 +68,9 @@
 
   <h3>Wireframe</h3>
   <div class="btn wfbtn" id="wf-btn">Wireframe: OFF</div>
+
+  <h3>Acciones</h3>
+  <div class="btn" id="reset-btn">🔄 REINICIAR PIEZAS</div>
 
   <h3>Luces (3)</h3>
   <div class="lightrow">Direccional <div class="lighttoggle on" data-light="dir"><div class="dot"></div></div></div>
