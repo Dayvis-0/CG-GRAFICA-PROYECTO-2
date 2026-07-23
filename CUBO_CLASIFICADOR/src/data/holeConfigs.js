@@ -18,7 +18,7 @@ export const HOLE_CONFIGS = [
     {
         label: 'Esfera',
         shape: 'circle',
-        cx: -1.2, cy: 1.2,
+        cx: -1.1, cy: 1.1,
         hole: { r: 0.6 },
         pieceType: 'sphere',
         pieceArgs: [0.55, 32, 32],
@@ -29,7 +29,7 @@ export const HOLE_CONFIGS = [
     {
         label: 'Cubo',
         shape: 'square',
-        cx: 0, cy: 1.2,
+        cx: 1.1, cy: 1.1,
         hole: { side: 1.0 },
         pieceType: 'box',
         pieceArgs: [0.9, 0.9, 0.9],
@@ -40,7 +40,7 @@ export const HOLE_CONFIGS = [
     {
         label: 'Cono',
         shape: 'triangle',
-        cx: 1.2, cy: 1.2,
+        cx: -1.1, cy: -1.1,
         hole: { r: 0.7 },
         pieceType: 'cone',
         pieceArgs: [0.65, 1.1, 32],
@@ -51,7 +51,7 @@ export const HOLE_CONFIGS = [
     {
         label: 'Estrella',
         shape: 'star',
-        cx: 1.4, cy: -1.4,
+        cx: 1.1, cy: -1.1,
         hole: { outerR: 0.55, innerR: 0.25, points: 4 },
         pieceType: 'star',
         pieceArgs: [0.5, 0.2, 0.6, 4],
