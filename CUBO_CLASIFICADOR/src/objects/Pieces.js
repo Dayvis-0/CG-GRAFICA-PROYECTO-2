@@ -6,8 +6,7 @@ import { computeStarPoints } from '../utils/geometry.js';
 const GEO_BUILDERS = {
     sphere:   (args) => new THREE.SphereGeometry(...args),
     box:      (args) => new THREE.BoxGeometry(...args),
-    cone:     (args) => new THREE.ConeGeometry(...args),
-    cylinder: (args) => new THREE.CylinderGeometry(...args),
+
     triangle: ([r, depth]) => {
         const shape = new THREE.Shape();
         for (let i = 0; i < 3; i++) {
@@ -39,7 +38,7 @@ const GEO_BUILDERS = {
 };
 
 /**
- * Crea las 6 piezas geométricas que encajan en los huecos del clasificador.
+ * Crea las 4 piezas geométricas que encajan en los huecos del clasificador.
  * Los tamaños se definen en data/holeConfigs.js (fuente única).
  * @returns {THREE.Group}
  */

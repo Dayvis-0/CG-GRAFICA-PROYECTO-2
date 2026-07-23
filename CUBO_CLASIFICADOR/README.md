@@ -1,6 +1,6 @@
 # 🧊 CUBO CLASIFICADOR
 
-Juego interactivo 3D en primera persona donde debes clasificar 6 piezas geométricas dejándolas caer en el hueco correcto de un cubo clasificador.
+Juego interactivo 3D en primera persona donde debes clasificar 4 piezas geométricas dejándolas caer en el hueco correcto de un cubo clasificador.
 
 Construido con **Three.js** (render 3D) y **cannon-es** (físicas), todo desde un navegador sin build tools.
 
@@ -20,15 +20,13 @@ El objetivo es llevar cada pieza al hueco que coincide con su forma. Cuando la p
 
 ---
 
-## 🧩 Las 6 piezas
+## 🧩 Las 4 piezas
 
 | Pieza | Geometría 3D | Forma del hueco | Color |
 |-------|-------------|-------------------|-------|
 | **Esfera** | `SphereGeometry` (r=0.55) | Círculo | 🔴 Rojo |
 | **Cubo** | `BoxGeometry` (0.9³) | Cuadrado | 🔵 Azul |
 | **Cono** | `ConeGeometry` (r=0.65, h=1.1) | Triángulo equilátero | 🟢 Verde |
-| **Hexágono** | `CylinderGeometry` (6 lados) | Hexágono | 🟡 Amarillo |
-| **Pirámide** | `ConeGeometry` (4 lados) | Rombo | 🟣 Violeta |
 | **Estrella** | `ExtrudeGeometry` (4 puntas) | Estrella 4 puntas | 🔷 Cian |
 
 ---
@@ -60,8 +58,8 @@ CUBO_CLASIFICADOR/
     │   └── RendererManager.js  # Renderer WebGL con sombras PCFSoft
     ├── objects/
     │   ├── Room.js            # Cuarto 14×8 (piso, techo, 4 paredes)
-    │   ├── Classifier.js      # Cubo clasificador con 6 huecos
-    │   └── Pieces.js          # Las 6 piezas geométricas
+    │   ├── Classifier.js      # Cubo clasificador con 4 huecos
+    │   └── Pieces.js          # Las 4 piezas geométricas
     ├── lights/
     │   └── Lights.js          # 3 luces: ambiental, techo, direccional con sombras
     ├── textures/
@@ -88,7 +86,7 @@ CUBO_CLASIFICADOR/
     │   ├── HoleDetector.js   # Detección punto-en-hueco (círculo, triángulo, polígono, etc.)
     │   └── holeShapes.js     # Generación de Paths para los 6 tipos de hueco
     └── data/
-        ├── holeConfigs.js          # FUENTE ÚNICA: configuración de los 6 huecos y piezas
+        ├── holeConfigs.js          # FUENTE ÚNICA: configuración de los 4 huecos y piezas
         └── classifierDimensions.js # Constantes geométricas del clasificador (OUTER, WALL_HEIGHT, ...)
 ```
 

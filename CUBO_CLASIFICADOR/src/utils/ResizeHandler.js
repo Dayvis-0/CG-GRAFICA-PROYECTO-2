@@ -1,5 +1,3 @@
-import * as THREE from 'three';
-
 /**
  * Adapta la cámara FPS y el renderer al cambiar el tamaño de la ventana.
  *

@@ -1,4 +1,4 @@
-// Fuente ÚNICA de verdad para los 6 huecos del clasificador y sus piezas.
+// Fuente ÚNICA de verdad para los 4 huecos del clasificador y sus piezas.
 // Tanto Classifier.js como Pieces.js importan de acá.
 // Si cambiás un tamaño de hueco, ajustalo SOLO en este archivo.
 

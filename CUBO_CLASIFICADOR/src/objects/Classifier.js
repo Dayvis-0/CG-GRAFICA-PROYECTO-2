@@ -32,7 +32,7 @@ const HOLE_BUILDERS = {
 
 // Función principal
 /**
- * Crea el cubo clasificador HUECO con 6 huecos agrandados en la cara superior.
+ * Crea el cubo clasificador HUECO con 4 huecos agrandados en la cara superior.
  *
  * @returns {{ group: THREE.Group, walls: THREE.Mesh[], panel: THREE.Mesh }}
  */
@@ -80,7 +80,7 @@ export function createClassifier() {
     return { group, walls, panel };
 }
 
-// Construcción del panel superior con los 6 huecos
+// Construcción del panel superior con los 4 huecos
 function buildTopPanel() {
     const shape = new THREE.Shape();
     shape.moveTo(-MID, -MID);
