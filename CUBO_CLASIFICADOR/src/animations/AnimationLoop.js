@@ -117,14 +117,7 @@ export function setupAnimationLoop({
             if (inputManager.isDown('ArrowRight')) dragManager.moveSelectedBy( step,  0);
         }
 
-        // 5. Update polimórfico por pieza (vía userData.update, si existe)
-        for (const child of pieces.children) {
-            if (child.userData.update) {
-                child.userData.update(child, child === draggedMesh);
-            }
-        }
-
-        // 6. Render
+        // 5. Render
         renderer.render(scene, activeCameraRef.current);
     }
 

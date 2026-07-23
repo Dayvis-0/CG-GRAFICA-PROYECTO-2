@@ -94,7 +94,8 @@ const dragManager = setupDragManager(activeCameraRef, renderer, {
     },
     onDragStart: () => { draggingRef.current = true; },
     onDragEnd:   (mesh) => {
-        draggingRef.current = false;
+        // Delay de 120ms para evitar que el click post-suelte active el pointer lock
+        setTimeout(() => { draggingRef.current = false; }, 120);
         if (mesh && rules.isOverOwnHole(mesh)) {
             console.log(`✅ ¡${mesh.userData.label} encajó correctamente!`);
         }
