@@ -44,18 +44,6 @@ export function triangleHole(cx, cy, r) {
 }
 
 /**
- * Crea un hueco en forma de rombo (para Pirámide).
- */
-export function diamondHole(cx, cy, rx, ry) {
-    const path = new Path();
-    path.moveTo(cx,       cy + ry);
-    path.lineTo(cx + rx,  cy);
-    path.lineTo(cx,       cy - ry);
-    path.lineTo(cx - rx,  cy);
-    return path;
-}
-
-/**
  * Crea un hueco en forma de estrella de N puntas.
  */
 export function starHole(cx, cy, outerR, innerR, points = 4) {
@@ -70,17 +58,3 @@ export function starHole(cx, cy, outerR, innerR, points = 4) {
     return path;
 }
 
-/**
- * Crea un hueco hexagonal (para Prisma hexagonal).
- */
-export function hexagonHole(cx, cy, r) {
-    const path = new Path();
-    for (let i = 0; i < 6; i++) {
-        const angle = Math.PI / 2 - (i / 6) * Math.PI * 2;
-        const x = cx + r * Math.cos(angle);
-        const y = cy + r * Math.sin(angle);
-        if (i === 0) path.moveTo(x, y);
-        else path.lineTo(x, y);
-    }
-    return path;
-}

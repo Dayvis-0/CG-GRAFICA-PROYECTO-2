@@ -11,8 +11,6 @@ import {
     circleHole,
     squareHole,
     triangleHole,
-    diamondHole,
-    hexagonHole,
     starHole,
 } from '../utils/holeShapes.js';
 
@@ -29,8 +27,6 @@ const HOLE_BUILDERS = {
     circle:   (cfg) => circleHole(cfg.cx, cfg.cy, cfg.hole.r),
     square:   (cfg) => squareHole(cfg.cx, cfg.cy, cfg.hole.side),
     triangle: (cfg) => triangleHole(cfg.cx, cfg.cy, cfg.hole.r),
-    diamond:  (cfg) => diamondHole(cfg.cx, cfg.cy, cfg.hole.rx, cfg.hole.ry),
-    hexagon:  (cfg) => hexagonHole(cfg.cx, cfg.cy, cfg.hole.r),
     star:     (cfg) => starHole(cfg.cx, cfg.cy, cfg.hole.outerR, cfg.hole.innerR, cfg.hole.points || 4),
 };
 

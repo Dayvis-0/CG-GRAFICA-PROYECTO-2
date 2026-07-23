@@ -54,20 +54,6 @@ export function isInsideHole(sx, sy, cfg) {
             const cx2 = cfg.cx - r * s32, cy2 = cfg.cy - r / 2;
             return pointInTriangle(sx, sy, ax, ay, bx, by, cx2, cy2);
         }
-        case 'diamond':
-            return Math.abs(sx - cfg.cx) / (cfg.hole.rx + T)
-                 + Math.abs(sy - cfg.cy) / (cfg.hole.ry + T) < 1;
-        case 'hexagon': {
-            const r = cfg.hole.r + T;
-            for (let i = 0; i < 6; i++) {
-                const a1 = Math.PI / 2 - (i / 6) * Math.PI * 2;
-                const a2 = Math.PI / 2 - ((i + 1) / 6) * Math.PI * 2;
-                const ax = cfg.cx + r * Math.cos(a1), ay = cfg.cy + r * Math.sin(a1);
-                const bx = cfg.cx + r * Math.cos(a2), by = cfg.cy + r * Math.sin(a2);
-                if (pointInTriangle(sx, sy, cfg.cx, cfg.cy, ax, ay, bx, by)) return true;
-            }
-            return false;
-        }
         case 'star': {
             const pts = cfg.hole.points || 4;
             const outerR = cfg.hole.outerR + T;

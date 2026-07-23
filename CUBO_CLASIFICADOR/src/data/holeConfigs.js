@@ -4,11 +4,11 @@
 
 /** @type {Array<{
  *   label:       string,
- *   shape:       'circle'|'square'|'triangle'|'diamond'|'hexagon'|'star'|'rect',
+ *   shape:       'circle'|'square'|'triangle'|'star',
  *   cx:          number,
  *   cy:          number,
  *   hole:        object,
- *   pieceType:   'sphere'|'box'|'cone'|'cylinder'|'star',
+ *   pieceType:   'sphere'|'box'|'cone'|'star',
  *   pieceArgs:   number[],        // argumentos para el constructor de la geometría
  *   pieceColor:  number,
  *   piecePos:    {x:number, z:number},
@@ -47,28 +47,6 @@ export const HOLE_CONFIGS = [
         pieceColor: 0x44dd88,
         piecePos: { x: -2.25, z: 3.9 },
         pieceY: 0.55,
-    },
-    {
-        label: 'Hexágono',
-        shape: 'hexagon',
-        cx: -1.2, cy: -1.2,
-        hole: { r: 0.6 },
-        pieceType: 'cylinder',
-        pieceArgs: [0.55, 0.55, 0.9, 6],
-        pieceColor: 0xffbb44,
-        piecePos: { x: -4.5, z: 0 },
-        pieceY: 0.45,
-    },
-    {
-        label: 'Pirámide',
-        shape: 'diamond',
-        cx: 0, cy: -1.2,
-        hole: { rx: 0.65, ry: 0.65 },
-        pieceType: 'cone',
-        pieceArgs: [0.6, 1.0, 4],
-        pieceColor: 0xdd66ff,
-        piecePos: { x: -2.25, z: -3.9 },
-        pieceY: 0.5,
     },
     {
         label: 'Estrella',
