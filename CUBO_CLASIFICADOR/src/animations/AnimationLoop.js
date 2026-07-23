@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import * as CANNON from 'cannon-es';
 
 /**
  * Bucle de renderizado principal: FPS, físicas, clamp de seguridad, input y render.
@@ -39,7 +40,8 @@ export function setupAnimationLoop({
             if (!child.isMesh || child === draggedMesh) continue;
 
             const body = child.userData.body;
-            if (!body || body.type !== 2) continue; // 2 = DYNAMIC en cannon-es
+            // Skip STATIC (2) y KINEMATIC (4) — solo clamp DYNAMIC (1)
+            if (!body || body.type !== CANNON.Body.DYNAMIC) continue;
 
             _box.setFromObject(child);
 
