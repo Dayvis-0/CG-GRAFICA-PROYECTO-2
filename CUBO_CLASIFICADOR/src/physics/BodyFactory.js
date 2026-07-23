@@ -134,28 +134,6 @@ export function createBodyFactory(world, materials) {
     }
 
     /**
-     * Construye un Trimesh a partir de una geometría Three (indexada o no).
-     */
-    function buildTrimeshFromGeometry(geometry) {
-        let vertices;
-        let indices;
-
-        const pos = geometry.attributes.position.array;
-        vertices = Array.from(pos);
-
-        if (geometry.index) {
-            indices = Array.from(geometry.index.array);
-        } else {
-            // Geometría no-indexada: generar índices secuenciales
-            const count = pos.length / 3;
-            indices = [];
-            for (let i = 0; i < count; i++) indices.push(i);
-        }
-
-        return new CANNON.Trimesh(vertices, indices);
-    }
-
-    /**
      * Material cannon según tipo de cuerpo (para ContactMaterial correcto).
      */
     function materialForKind(kind) {

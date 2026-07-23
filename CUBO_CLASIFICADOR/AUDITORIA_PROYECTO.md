@@ -212,39 +212,27 @@ El proyecto es un juego 3D educativo de clasificación de figuras geométricas c
 
 ---
 
-# FASE 4 — Código Muerto y Recursos No Utilizados
+# FASE 4 — Código Muerto y Recursos No Utilizados ✅ COMPLETADA
 
 **Objetivo:** Eliminar código y recursos que no se usan.
 
 ---
 
-### DEAD-001 — Función `buildTrimeshFromGeometry` no invocada
+### DEAD-001 — Función `buildTrimeshFromGeometry` no invocada ✅
 
 - **Categoría:** Código muerto
 - **Prioridad:** Baja
-- **Archivo(s) afectado(s):** `src/physics/BodyFactory.js` (líneas 137-156)
-- **Descripción:** La función `buildTrimeshFromGeometry` está declarada pero nunca es invocada en todo el proyecto.
-- **Evidencia:** `function buildTrimeshFromGeometry(geometry) { ... }` — búsqueda en todo el proyecto no encuentra ninguna llamada.
-- **Motivo:** Genera ruido y aumenta el tamaño del archivo más grande del proyecto.
-- **Riesgos de modificarlo:** Nulo.
-- **Recomendación:** Eliminar la función o documentar si es código reservado para uso futuro.
-- **Dependencias:** Ninguna.
-- **Fase recomendada:** Fase 4.
+- **Archivo(s) afectado(s):** `src/physics/BodyFactory.js`
+- **Estado:** ✅ Completado — Función eliminada de `BodyFactory.js`.
 
 ---
 
-### DEAD-002 — Directorio `textures/` vacío en raíz del proyecto
+### DEAD-002 — Directorio `textures/` vacío en raíz del proyecto ✅
 
 - **Categoría:** Recurso no utilizado
 - **Prioridad:** Baja
-- **Archivo(s) afectado(s):** `CUBO_CLASIFICADOR/textures/` (directorio vacío)
-- **Descripción:** Existe un directorio `textures/` vacío en la raíz de `CUBO_CLASIFICADOR`. Las texturas del proyecto son procedurales (generadas por canvas en `src/textures/TextureFactory.js`).
-- **Evidencia:** `ls textures/` — directorio vacío.
-- **Motivo:** Directorio vacío que puede confundir a nuevos desarrolladores.
-- **Riesgos de modificarlo:** Nulo.
-- **Recomendación:** Eliminar si no se planea usar texturas de imagen, o agregar un `.gitkeep` con un comentario explicativo.
-- **Dependencias:** Ninguna.
-- **Fase recomendada:** Fase 4.
+- **Archivo(s) afectado(s):** `CUBO_CLASIFICADOR/textures/`
+- **Estado:** ✅ Completado — Directorio vacío eliminado.
 
 ---
 
@@ -659,7 +647,7 @@ El proyecto es un juego 3D educativo de clasificación de figuras geométricas c
 | 1 | Rendimiento crítico (hot path) | Bajo | Alta | Ninguna | PERF-001 ✅, PERF-002 ✅, PERF-003 ✅, PERF-004 ✅ |
 | 2 | Violaciones de SRP | Medio | Alta | Ninguna | SRP-001 ✅, SRP-002 ✅, SRP-003 ✅, SRP-004 ✅, SRP-005 ✅, SRP-006 ✅ |
 | 3 | Código duplicado | Medio-Alto | Media | SRP-003, PERF-003 | DUP-001 ✅, DUP-002 ✅, DUP-003 ✅, DUP-004 ✅ |
-| 4 | Código muerto | Nulo | Baja | Ninguna | DEAD-001, DEAD-002 |
+| 4 | Código muerto | Nulo | Baja | Ninguna | DEAD-001 ✅, DEAD-002 ✅ |
 | 5 | Consistencia y convenciones | Bajo | Baja | Ninguna | CON-001, CON-002, CON-003 |
 | 6 | Manejo de errores | Bajo | Media | SRP-001 | ERR-001, ERR-002, ERR-003 |
 | 7 | Seguridad | Bajo | Media | ERR-002 | SEC-001, SEC-002 |
