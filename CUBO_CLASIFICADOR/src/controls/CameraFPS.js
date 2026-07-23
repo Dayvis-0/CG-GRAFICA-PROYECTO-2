@@ -59,20 +59,22 @@ export function setupCameraFPS(camera, renderer, roomBounds, obstacles = [], dra
     const right = new THREE.Vector3();
     const move = new THREE.Vector3();
     const target = new THREE.Vector3();
-    const _box = new THREE.Box3();
     const COLLIDE_MARGIN = 0.35;
 
+    // PERF-003: Precalcular AABBs de obstáculos estáticos (paredes, panel) una sola vez
+    const obstacleBoxes = obstacles.map(mesh => new THREE.Box3().setFromObject(mesh));
+
     function isBlocked(pos) {
-        for (const mesh of obstacles) {
-            if (!mesh.visible) continue;
-            _box.setFromObject(mesh);
+        for (let i = 0; i < obstacles.length; i++) {
+            if (!obstacles[i].visible) continue;
+            const box = obstacleBoxes[i];
             if (
-                pos.x >= _box.min.x - COLLIDE_MARGIN &&
-                pos.x <= _box.max.x + COLLIDE_MARGIN &&
-                pos.y >= _box.min.y - COLLIDE_MARGIN &&
-                pos.y <= _box.max.y + COLLIDE_MARGIN &&
-                pos.z >= _box.min.z - COLLIDE_MARGIN &&
-                pos.z <= _box.max.z + COLLIDE_MARGIN
+                pos.x >= box.min.x - COLLIDE_MARGIN &&
+                pos.x <= box.max.x + COLLIDE_MARGIN &&
+                pos.y >= box.min.y - COLLIDE_MARGIN &&
+                pos.y <= box.max.y + COLLIDE_MARGIN &&
+                pos.z >= box.min.z - COLLIDE_MARGIN &&
+                pos.z <= box.max.z + COLLIDE_MARGIN
             ) {
                 return true;
             }

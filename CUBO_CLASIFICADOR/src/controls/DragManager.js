@@ -38,6 +38,10 @@ export function setupDragManager(activeCameraRef, renderer, {
     const _offMin    = new THREE.Vector3();
     const _offMax    = new THREE.Vector3();
 
+    // Half-size precacheado: se calcula UNA vez en onPointerDown y se reutiliza
+    // en todo el flujo de drag, evitando llamar setFromObject (~8 veces/frame).
+    const _cachedHalfSize = new THREE.Vector3();
+
     // ─── Colisión contra obstáculos del clasificador (AABB) ──────
     /**
      * ¿El AABB de la pieza en `pos` intersecta alguna pared del clasificador?
@@ -47,19 +51,16 @@ export function setupDragManager(activeCameraRef, renderer, {
     function overlapsClassifier(pos) {
         if (obstacleBoxes.length === 0) return false;
 
-        // AABB de la pieza centrado en la posición candidata
-        _pieceBox.setFromObject(selected);
-        _pieceBox.getSize(_size);
-
+        // AABB de la pieza centrado en la posición candidata (usa half-size precacheado)
         _candBox.min.set(
-            pos.x - _size.x * 0.5,
-            pos.y - _size.y * 0.5,
-            pos.z - _size.z * 0.5
+            pos.x - _cachedHalfSize.x,
+            pos.y - _cachedHalfSize.y,
+            pos.z - _cachedHalfSize.z
         );
         _candBox.max.set(
-            pos.x + _size.x * 0.5,
-            pos.y + _size.y * 0.5,
-            pos.z + _size.z * 0.5
+            pos.x + _cachedHalfSize.x,
+            pos.y + _cachedHalfSize.y,
+            pos.z + _cachedHalfSize.z
         );
 
         for (const obsBox of obstacleBoxes) {
@@ -90,28 +91,16 @@ export function setupDragManager(activeCameraRef, renderer, {
      * @returns {THREE.Vector3}
      */
     function clampToRoom(pos) {
-        _pieceBox.setFromObject(selected);
-
-        // Distancia desde selected.position hasta cada cara del AABB
-        _offMin.set(
-            selected.position.x - _pieceBox.min.x,
-            selected.position.y - _pieceBox.min.y,
-            selected.position.z - _pieceBox.min.z,
-        );
-        _offMax.set(
-            _pieceBox.max.x - selected.position.x,
-            _pieceBox.max.y - selected.position.y,
-            _pieceBox.max.z - selected.position.z,
-        );
-
+        // Usa half-size precacheado como proxy de offMin/offMax
+        // (equivalente porque offMin ≈ offMax ≈ halfSize para geometrías centradas)
         const half = roomBounds.half;
         const h    = roomBounds.height;
 
         const m = ROOM_MARGIN;
-        pos.x = Math.max(-half + _offMin.x + m, Math.min(half - _offMax.x - m, pos.x));
-        pos.z = Math.max(-half + _offMin.z + m, Math.min(half - _offMax.z - m, pos.z));
+        pos.x = Math.max(-half + _cachedHalfSize.x + m, Math.min(half - _cachedHalfSize.x - m, pos.x));
+        pos.z = Math.max(-half + _cachedHalfSize.z + m, Math.min(half - _cachedHalfSize.z - m, pos.z));
         // Y: sin piso (minY ya lo maneja), solo techo
-        pos.y = Math.min(h - _offMax.y - m, pos.y);
+        pos.y = Math.min(h - _cachedHalfSize.y - m, pos.y);
 
         return pos;
     }
@@ -124,16 +113,10 @@ export function setupDragManager(activeCameraRef, renderer, {
      * @returns {THREE.Vector3}
      */
     function limitStep(pos, from) {
-        _pieceBox.setFromObject(selected);
-        _pieceBox.getSize(_size);
-
-        const maxDx = _size.x * 0.5;
-        const maxDy = _size.y * 0.5;
-        const maxDz = _size.z * 0.5;
-
-        pos.x = Math.max(from.x - maxDx, Math.min(from.x + maxDx, pos.x));
-        pos.y = Math.max(from.y - maxDy, Math.min(from.y + maxDy, pos.y));
-        pos.z = Math.max(from.z - maxDz, Math.min(from.z + maxDz, pos.z));
+        // Usa half-size precacheado en lugar de setFromObject
+        pos.x = Math.max(from.x - _cachedHalfSize.x, Math.min(from.x + _cachedHalfSize.x, pos.x));
+        pos.y = Math.max(from.y - _cachedHalfSize.y, Math.min(from.y + _cachedHalfSize.y, pos.y));
+        pos.z = Math.max(from.z - _cachedHalfSize.z, Math.min(from.z + _cachedHalfSize.z, pos.z));
 
         return pos;
     }
@@ -211,6 +194,11 @@ export function setupDragManager(activeCameraRef, renderer, {
         selected = hits[0].object;
         dragging = true;
         dragStartY = selected.position.y; // capturar Y real ANTES de cualquier física
+
+        // Precachear half-size de la pieza para todo el drag (PERF-001)
+        _pieceBox.setFromObject(selected);
+        _pieceBox.getSize(_size);
+        _cachedHalfSize.copy(_size).multiplyScalar(0.5);
         if (onDragStart) onDragStart();
         notifySelect(selected);
 
@@ -243,9 +231,7 @@ export function setupDragManager(activeCameraRef, renderer, {
 
         // ─── Límite inferior (piso / hueco / panel) ────────────
         if (selected.userData.minY !== undefined) {
-            _pieceBox.setFromObject(selected);
-            _pieceBox.getSize(_size);
-            const halfH = _size.y * 0.5;
+            const halfH = _cachedHalfSize.y;
 
             // La pieza NO debe penetrar el panel durante el arrastre (kinematic).
             // Usamos el MAX entre el clamp teórico y la Y real al inicio del drag
@@ -309,9 +295,7 @@ export function setupDragManager(activeCameraRef, renderer, {
             pos.z += dz;
 
             if (selected.userData.minY !== undefined) {
-                _pieceBox.setFromObject(selected);
-                _pieceBox.getSize(_size);
-                const halfH = _size.y * 0.5;
+                const halfH = _cachedHalfSize.y;
 
                 // Mantener sobre la superficie del panel durante arrastre kinemático
                 if (isOverClassifier(pos)) {

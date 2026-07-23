@@ -36,6 +36,9 @@ export function setupAnimationLoop({
     const HEIGHT = roomBounds?.height ?? 8;
     const MARGIN = 0.5; // mismo margen que DragManager
 
+    // Cache de half-sizes por pieza (geometría no cambia en runtime)
+    const _halfSizeCache = new WeakMap();
+
     /** Clamp post-física: si una pieza salió del cuarto, la reencuadra y anula su velocidad. */
     function clampToRoomBounds(draggedMesh) {
         for (const child of pieces.children) {
@@ -44,19 +47,18 @@ export function setupAnimationLoop({
             const body = child.userData.body;
             if (!body || body.type !== CANNON.Body.DYNAMIC) continue;
 
-            _box.setFromObject(child);
+            // Usar half-size cacheado en lugar de setFromObject (PERF-002)
+            let hs = _halfSizeCache.get(child);
+            if (!hs) {
+                _box.setFromObject(child);
+                _box.getSize(_offMin); // reutilizamos _offMin temporalmente
+                hs = _offMin.clone().multiplyScalar(0.5);
+                _halfSizeCache.set(child, hs);
+            }
 
-            // Distancia del centro a cada cara del AABB
-            _offMin.set(
-                child.position.x - _box.min.x,
-                child.position.y - _box.min.y,
-                child.position.z - _box.min.z,
-            );
-            _offMax.set(
-                _box.max.x - child.position.x,
-                _box.max.y - child.position.y,
-                _box.max.z - child.position.z,
-            );
+            // Offsets simétricos desde el centro
+            _offMin.copy(hs);
+            _offMax.copy(hs);
 
             const cx = Math.max(-HALF + _offMin.x + MARGIN, Math.min(HALF - _offMax.x - MARGIN, child.position.x));
             const cz = Math.max(-HALF + _offMin.z + MARGIN, Math.min(HALF - _offMax.z - MARGIN, child.position.z));

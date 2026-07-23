@@ -78,7 +78,10 @@ export function setupInterface({
     // ── Aplicar estado actualizado al mesh ──
     function applyState(st) {
         if (!st) return;
+        // PERF-004: liberar recursos GPU del material anterior antes de reemplazar
+        const oldMat = st.mesh.material;
         st.mesh.material = buildMaterial(st.state.material, st.def.color, st.state.texture, st.state.wireframe);
+        if (oldMat && oldMat !== st.mesh.material) oldMat.dispose();
         st.mesh.userData._matType = st.state.material;
         st.mesh.userData._texKey = st.state.texture;
         updatePanelSelection();

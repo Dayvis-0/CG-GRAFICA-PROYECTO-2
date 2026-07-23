@@ -40,13 +40,13 @@ El proyecto es un juego 3D educativo de clasificación de figuras geométricas c
 
 ---
 
-# FASE 1 — Problemas Críticos de Rendimiento
+# FASE 1 — Problemas Críticos de Rendimiento ✅ COMPLETADA
 
 **Objetivo:** Eliminar operaciones costosas en el hot path (código que se ejecuta cada frame o en cada movimiento de mouse).
 
 ---
 
-### PERF-001 — `setFromObject()` llamado múltiples veces por frame en DragManager
+### PERF-001 — `setFromObject()` llamado múltiples veces por frame en DragManager ✅
 
 - **Categoría:** Rendimiento
 - **Prioridad:** Alta
@@ -58,10 +58,11 @@ El proyecto es un juego 3D educativo de clasificación de figuras geométricas c
 - **Recomendación:** Calcular `setFromObject` UNA sola vez al inicio de `onPointerMove` y pasar la referencia del `Box3` resultante a todas las funciones internas.
 - **Dependencias:** Ninguna.
 - **Fase recomendada:** Fase 1.
+- **Estado:** ✅ Completado — Se precachea el half-size en `onPointerDown` y se reutiliza en todo el flujo de drag. De ~8 `setFromObject` por evento de mouse a 1 sola vez al inicio del drag.
 
 ---
 
-### PERF-002 — `setFromObject()` en cada frame dentro de AnimationLoop
+### PERF-002 — `setFromObject()` en cada frame dentro de AnimationLoop ✅
 
 - **Categoría:** Rendimiento
 - **Prioridad:** Alta
@@ -73,10 +74,11 @@ El proyecto es un juego 3D educativo de clasificación de figuras geométricas c
 - **Recomendación:** Usar `child.position.y` con un offset fijo basado en el tipo de pieza (ya disponible en `userData`) en lugar de recalcular el bounding box completo.
 - **Dependencias:** Ninguna.
 - **Fase recomendada:** Fase 1.
+- **Estado:** ✅ Completado — Se usa un `WeakMap` para cachear el half-size por pieza. `setFromObject` se ejecuta UNA vez por pieza (en el primer frame que la encuentra) y se reutiliza en frames siguientes.
 
 ---
 
-### PERF-003 — `setFromObject()` sobre obstáculos estáticos en cada frame (CameraFPS)
+### PERF-003 — `setFromObject()` sobre obstáculos estáticos en cada frame (CameraFPS) ✅
 
 - **Categoría:** Rendimiento
 - **Prioridad:** Media
@@ -88,10 +90,11 @@ El proyecto es un juego 3D educativo de clasificación de figuras geométricas c
 - **Recomendación:** Precalcular los `Box3` de los obstáculos en el `setup` y almacenarlos en un array. Reutilizar en cada frame.
 - **Dependencias:** Ninguna.
 - **Fase recomendada:** Fase 1.
+- **Estado:** ✅ Completado — Los `Box3` de obstáculos se precalculan en el `setup` con `obstacles.map(mesh => new Box3().setFromObject(mesh))` y se reutilizan en cada frame.
 
 ---
 
-### PERF-004 — Memory leak por materiales sin `dispose()`
+### PERF-004 — Memory leak por materiales sin `dispose()` ✅
 
 - **Categoría:** Rendimiento / Recursos
 - **Prioridad:** Media
@@ -103,6 +106,7 @@ El proyecto es un juego 3D educativo de clasificación de figuras geométricas c
 - **Recomendación:** Llamar `oldMaterial.dispose()` antes de asignar el nuevo, o implementar caché/memoización en `MaterialFactory`.
 - **Dependencias:** Ninguna.
 - **Fase recomendada:** Fase 1.
+- **Estado:** ✅ Completado — Se llama `oldMat.dispose()` antes de reasignar el nuevo material en `applyState()`. Se verifica que el material viejo sea distinto al nuevo para evitar disponer el material en uso.
 
 ---
 
@@ -750,7 +754,7 @@ El proyecto es un juego 3D educativo de clasificación de figuras geométricas c
 
 | Fase | Objetivo | Riesgo | Prioridad | Dependencias | IDs |
 |------|----------|--------|-----------|--------------|-----|
-| 1 | Rendimiento crítico (hot path) | Bajo | Alta | Ninguna | PERF-001, PERF-002, PERF-003, PERF-004 |
+| 1 | Rendimiento crítico (hot path) | Bajo | Alta | Ninguna | PERF-001 ✅, PERF-002 ✅, PERF-003 ✅, PERF-004 ✅ |
 | 2 | Violaciones de SRP | Medio | Alta | Ninguna | SRP-001, SRP-002, SRP-003, SRP-004, SRP-005, SRP-006 |
 | 3 | Código duplicado | Medio-Alto | Media | SRP-003, PERF-003 | DUP-001, DUP-002, DUP-003, DUP-004 |
 | 4 | Código muerto | Nulo | Baja | Ninguna | DEAD-001, DEAD-002 |
