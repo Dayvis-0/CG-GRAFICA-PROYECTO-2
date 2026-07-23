@@ -24,6 +24,7 @@ export function squareHole(cx, cy, side) {
     path.lineTo(cx - half, cy + half);
     path.lineTo(cx + half, cy + half);
     path.lineTo(cx + half, cy - half);
+    path.closePath();
     return path;
 }
 
@@ -40,6 +41,7 @@ export function triangleHole(cx, cy, r) {
         if (i === 0) path.moveTo(x, y);
         else path.lineTo(x, y);
     }
+    path.closePath();
     return path;
 }
 

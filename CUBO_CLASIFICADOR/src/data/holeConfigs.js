@@ -41,7 +41,7 @@ export const HOLE_CONFIGS = [
         label: 'Triángulo',
         shape: 'triangle',
         cx: -1.1, cy: -1.1,
-        hole: { r: 0.7 },
+        hole: { r: 0.85 },
         pieceType: 'triangle',
         pieceArgs: [0.65, 0.9],
         pieceColor: 0x44dd88,

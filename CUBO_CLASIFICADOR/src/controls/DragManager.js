@@ -26,6 +26,7 @@ export function setupDragManager(activeCameraRef, renderer, {
     /** @type {THREE.Mesh | null} */
     let selected = null;
     let dragging = false;
+    let dragStartY = null; // Y real de la pieza al iniciar el drag
 
     // ─── AABBs de obstáculos (solo clasificador, pre-computados) ──
     const obstacleBoxes = obstacles.map(m => new THREE.Box3().setFromObject(m));
@@ -209,6 +210,7 @@ export function setupDragManager(activeCameraRef, renderer, {
 
         selected = hits[0].object;
         dragging = true;
+        dragStartY = selected.position.y; // capturar Y real ANTES de cualquier física
         if (onDragStart) onDragStart();
         notifySelect(selected);
 
@@ -224,9 +226,6 @@ export function setupDragManager(activeCameraRef, renderer, {
         dragPlane.setFromNormalAndCoplanarPoint(camDir, selected.position);
         raycaster.ray.intersectPlane(dragPlane, target);
         offset.copy(target).sub(selected.position);
-        // Anular el offset vertical para evitar que la pieza se eleve/baje
-        // bruscamente al hacer click (el plano inclinado genera target.y ≠ pos.y).
-        offset.y = 0;
 
         renderer.domElement.style.cursor = 'grabbing';
     }
@@ -249,11 +248,16 @@ export function setupDragManager(activeCameraRef, renderer, {
             const halfH = _size.y * 0.5;
 
             // La pieza NO debe penetrar el panel durante el arrastre (kinematic).
-            // El Trimesh de cannon-es resuelve las colisiones al soltar la pieza.
+            // Usamos el MAX entre el clamp teórico y la Y real al inicio del drag
+            // para evitar que la pieza salte si Cannon la tenía ligeramente más baja.
             if (isOverClassifier(newPos)) {
-                // Sobre el clasificador: la base de la pieza no puede penetrar
-                // el panel. Límite = cara superior + half-height real.
-                newPos.y = Math.max(classifierTop + halfH, newPos.y);
+                const theoreticalMin = classifierTop + halfH;
+                // Si la pieza ya estaba más baja que el teórico (por la física de Cannon),
+                // respetar su posición real hasta que el usuario la suba deliberadamente.
+                const effectiveMin = dragStartY !== null
+                    ? Math.min(theoreticalMin, dragStartY)
+                    : theoreticalMin;
+                newPos.y = Math.max(effectiveMin, newPos.y);
             } else {
                 newPos.y = Math.max(selected.userData.minY, newPos.y);
             }
@@ -281,6 +285,7 @@ export function setupDragManager(activeCameraRef, renderer, {
             selected = null;
         }
         dragging = false;
+        dragStartY = null;
         if (onDragEnd) onDragEnd();
         renderer.domElement.style.cursor = 'default';
     }
