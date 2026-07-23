@@ -117,7 +117,8 @@ export function setupInterface({
     const btnContainer = document.getElementById('obj-buttons');
     piecesGroup.children.forEach(c => {
         if (!c.isMesh) return;
-        const btn = document.createElement('span');
+        const btn = document.createElement('button');
+        btn.type = 'button';
         btn.className = 'btn objbtn';
         btn.textContent = c.userData.label;
         btn.dataset.key = c.userData.label;

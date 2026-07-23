@@ -242,56 +242,36 @@ El proyecto es un juego 3D educativo de clasificación de figuras geométricas c
 
 ---
 
-### CON-001 — Naming de archivos inconsistente (PascalCase vs camelCase)
+# FASE 5 — Consistencia y Convenciones ✅ COMPLETADA
 
-- **Categoría:** Consistencia
-- **Prioridad:** Baja
-- **Archivo(s) afectado(s):**
-  - PascalCase: `AnimationLoop.js`, `CameraFPS.js`, `DragManager.js`, `InputManager.js`, `CameraManager.js`, `RendererManager.js`, `SceneManager.js`, `ClassifierRules.js`, `Lights.js`, `MaterialFactory.js`, `Classifier.js`, `Pieces.js`, `Room.js`, `BodyFactory.js`, `PhysicsSystem.js`, `PhysicsWorld.js`, `TextureFactory.js`, `Interface.js`, `HoleDetector.js`, `ResizeHandler.js`
-  - camelCase: `classifierDimensions.js`, `holeConfigs.js`, `geometry.js`, `holeShapes.js`
-- **Descripción:** La mayoría de archivos usan PascalCase, pero 4 archivos usan camelCase.
-- **Evidencia:** Ver lista anterior.
-- **Motivo:** Inconsistencia visual. Los archivos camelCase son los de datos (`src/data/`) y utilidades puras sin clase (`src/utils/geometry.js`, `src/utils/holeShapes.js`).
-- **Riesgos de modificarlo:** Bajo, pero requiere actualizar todos los imports.
-- **Recomendación:** Esto podría ser una convención intencional (PascalCase = módulos con factory/clase, camelCase = datos/utilidades puras). Si es intencional, documentarlo. Si no, unificar a PascalCase.
-- **Dependencias:** Ninguna.
-- **Fase recomendada:** Fase 5.
+**Objetivo:** Unificar naming, patrones y convenciones en todo el proyecto.
 
 ---
 
-### CON-002 — Convención `create*` vs `setup*` sin criterio claro
+### CON-001 — Naming de archivos inconsistente (PascalCase vs camelCase) ✅
 
 - **Categoría:** Consistencia
 - **Prioridad:** Baja
-- **Archivo(s) afectado(s):** Todos los módulos exportadores
-- **Descripción:** Algunas funciones usan `createX` y otras `setupX`, sin un criterio documentado.
-  - `create*`: `createScene`, `createCamera`, `createRenderer`, `createRoom`, `createClassifier`, `createPieces`, `createLights`, `createTextures`, `createMaterialFactory`, `createInputManager`, `createPhysicsWorld`, `createBodyFactory`, `createPhysicsSystem`, `createClassifierRules`
-  - `setup*`: `setupCameraFPS`, `setupDragManager`, `setupInterface`, `setupResize`, `setupAnimationLoop`
-- **Evidencia:** Ver lista. La distinción parece ser `create` = retorna un valor, `setup` = configura side-effects. Pero `setupInterface` retorna un controlador, rompiendo el patrón.
-- **Motivo:** Dificulta predecir el comportamiento de una función sin leer su implementación.
-- **Riesgos de modificarlo:** Bajo, pero requiere renombrar funciones en múltiples archivos.
-- **Recomendación:** Documentar la convención existente o unificar. Sugerencia: `create*` para todo, ya que todos retornan valores.
-- **Dependencias:** Ninguna.
-- **Fase recomendada:** Fase 5.
+- **Archivo(s) afectado(s):** Módulos y datos en `src/`
+- **Estado:** ✅ Verificado — Se mantiene la convención explícita: PascalCase para clases/módulos con factories e instanciación (`DragManager.js`, `Room.js`), y camelCase para estructuras de datos puras (`holeConfigs.js`, `classifierDimensions.js`) y utilidades puras (`math.js`, `geometry.js`).
 
 ---
 
-### CON-003 — Elementos HTML interactivos con tags inconsistentes
+### CON-002 — Convención `create*` vs `setup*` sin criterio claro ✅
+
+- **Categoría:** Consistencia
+- **Prioridad:** Baja
+- **Archivo(s) afectado(s):** Módulos exportadores
+- **Estado:** ✅ Verificado — Se establece y documenta el estándar: `create*` se utiliza para fábricas que retornan instancias u objetos principales de Three/Cannon, y `setup*` para inicialización de controladores con event listeners y side-effects (`setupDragManager`, `setupInterface`, `setupResize`).
+
+---
+
+### CON-003 — Elementos HTML interactivos con tags inconsistentes ✅
 
 - **Categoría:** Consistencia / Accesibilidad
 - **Prioridad:** Baja
-- **Archivo(s) afectado(s):** `index.html` (líneas 63-80)
-- **Descripción:** Los elementos clickeables del panel usan tags diferentes sin razón aparente:
-  - Materiales: `<button>` (correcto)
-  - Texturas: `<span>` con clase `btn`
-  - Wireframe: `<div>` con clase `btn`
-  - Reset: `<div>` con clase `btn`
-- **Evidencia:** Líneas 63-66 usan `<button>`, líneas 69-73 usan `<span>`, líneas 77 y 80 usan `<div>`.
-- **Motivo:** Los elementos no-button carecen de semántica y accesibilidad (no focuseables por teclado, no anunciados por lectores de pantalla).
-- **Riesgos de modificarlo:** Nulo.
-- **Recomendación:** Unificar todos los elementos interactivos como `<button>` con `type="button"`.
-- **Dependencias:** Ninguna.
-- **Fase recomendada:** Fase 5.
+- **Archivo(s) afectado(s):** `index.html`, `src/ui/Interface.js`
+- **Estado:** ✅ Completado — Se refactorizaron todos los elementos clickeables en `index.html` y la generación dinámica en `Interface.js` para usar explícitamente etiquetas semánticas `<button type="button">`.
 
 ---
 
@@ -648,7 +628,7 @@ El proyecto es un juego 3D educativo de clasificación de figuras geométricas c
 | 2 | Violaciones de SRP | Medio | Alta | Ninguna | SRP-001 ✅, SRP-002 ✅, SRP-003 ✅, SRP-004 ✅, SRP-005 ✅, SRP-006 ✅ |
 | 3 | Código duplicado | Medio-Alto | Media | SRP-003, PERF-003 | DUP-001 ✅, DUP-002 ✅, DUP-003 ✅, DUP-004 ✅ |
 | 4 | Código muerto | Nulo | Baja | Ninguna | DEAD-001 ✅, DEAD-002 ✅ |
-| 5 | Consistencia y convenciones | Bajo | Baja | Ninguna | CON-001, CON-002, CON-003 |
+| 5 | Consistencia y convenciones | Bajo | Baja | Ninguna | CON-001 ✅, CON-002 ✅, CON-003 ✅ |
 | 6 | Manejo de errores | Bajo | Media | SRP-001 | ERR-001, ERR-002, ERR-003 |
 | 7 | Seguridad | Bajo | Media | ERR-002 | SEC-001, SEC-002 |
 | 8 | Números mágicos | Bajo | Baja | Ninguna | MAG-001, MAG-002, MAG-003, MAG-004 |
