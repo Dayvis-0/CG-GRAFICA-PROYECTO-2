@@ -110,13 +110,12 @@ export function createBodyFactory(world, materials) {
                 return new CANNON.Cylinder(r, r, h, 3);
             }
             case 'star': {
-                // La estrella es cóncava, pero Trimesh no colisiona contra Box
-                // (que es lo que usa el panel ahora). Usamos el bounding box
-                // como aproximación convexa para que al menos se apoye sobre
-                // la superficie del panel.
-                return new CANNON.Box(new CANNON.Vec3(
-                    size.x / 2, size.y / 2, size.z / 2,
-                ));
+                // La estrella es cóncava. Usamos un Cylinder como aproximación
+                // para que la pieza pueda deslizarse por el centro del hueco
+                // sin que el box body se trabe en las puntas internas.
+                const r = size.x / 2;
+                const h = size.y;
+                return new CANNON.Cylinder(r, r, h, 8);
             }
             default: {
                 console.warn(`Unknown pieceType "${type}", usando Box fallback`);

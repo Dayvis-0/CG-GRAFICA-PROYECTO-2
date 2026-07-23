@@ -52,7 +52,7 @@ export const HOLE_CONFIGS = [
         label: 'Estrella',
         shape: 'star',
         cx: 1.1, cy: -1.1,
-        hole: { outerR: 0.55, innerR: 0.25, points: 4 },
+        hole: { outerR: 0.80, innerR: 0.40, points: 4 },
         pieceType: 'star',
         pieceArgs: [0.5, 0.2, 0.6, 4],
         pieceColor: 0x44ddff,

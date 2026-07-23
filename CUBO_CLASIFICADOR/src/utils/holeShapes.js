@@ -35,9 +35,13 @@ export function squareHole(cx, cy, side) {
 export function triangleHole(cx, cy, r) {
     const path = new Path();
     const top = Math.PI / 2;
+    // Generamos el triángulo en sentido CW (horario: top → bottom-right → bottom-left)
+    // para que Three.js lo normalice correctamente a CCW como hueco.
+    // Con el orden original (top → bottom-left → bottom-right), el algoritmo earcut
+    // de Three.js r160 no calcula bien el puente del hueco cuando el polígono tiene
+    // exactamente 3 vértices después de filtrar puntos colineales.
     for (let i = 0; i < 3; i++) {
-        // Sumar el ángulo (CW) en vez de restar (CCW) → winding horario = hueco válido
-        const angle = top + (i / 3) * Math.PI * 2;
+        const angle = top - (i / 3) * Math.PI * 2;
         const x = cx + r * Math.cos(angle);
         const y = cy + r * Math.sin(angle);
         if (i === 0) path.moveTo(x, y);
