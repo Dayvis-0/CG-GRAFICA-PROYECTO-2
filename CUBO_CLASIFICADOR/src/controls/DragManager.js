@@ -279,6 +279,7 @@ export function setupDragManager(activeCameraRef, renderer, {
     }
 
     function onPointerUp() {
+        const releasedMesh = selected;
         if (selected) {
             // El panel ahora es un Trimesh con huecos reales: la pieza cae
             // naturalmente por gravedad si está sobre un hueco, o se apoya
@@ -288,7 +289,7 @@ export function setupDragManager(activeCameraRef, renderer, {
         }
         dragging = false;
         dragStartY = null;
-        if (onDragEnd) onDragEnd();
+        if (onDragEnd) onDragEnd(releasedMesh);
         renderer.domElement.style.cursor = 'default';
     }
 

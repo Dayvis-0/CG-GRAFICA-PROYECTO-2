@@ -16,6 +16,7 @@ import { setupAnimationLoop }   from './animations/AnimationLoop.js';
 import { createPhysicsWorld }   from './physics/PhysicsWorld.js';
 import { createBodyFactory }    from './physics/BodyFactory.js';
 import { createPhysicsSystem }  from './physics/PhysicsSystem.js';
+import { createClassifierRules } from './game/ClassifierRules.js';
 import { HOLE_CONFIGS } from './data/holeConfigs.js';
 import { WALL_HEIGHT, PANEL_DEPTH, OUTER } from './data/classifierDimensions.js';
 
@@ -69,6 +70,9 @@ for (const piece of pieces.children) {
 
 const physicsSystem = createPhysicsSystem(pieces, bodyFactory, physicsWorld);
 
+// ─── Reglas del juego ──────────────────────────────────────────────
+const rules = createClassifierRules(panel);
+
 // ─── Controles ─────────────────────────────────────────────────────
 const obstacles = [...walls, panel, ...pieces.children.filter(c => c.isMesh)];
 const fpsControl = setupCameraFPS(cam, renderer, room.userData.bounds, obstacles, draggingRef, inputManager);
@@ -89,7 +93,12 @@ const dragManager = setupDragManager(activeCameraRef, renderer, {
         if (interfaceCtrl) interfaceCtrl.onPieceSelected(mesh);
     },
     onDragStart: () => { draggingRef.current = true; },
-    onDragEnd:   () => { draggingRef.current = false; },
+    onDragEnd:   (mesh) => {
+        draggingRef.current = false;
+        if (mesh && rules.isOverOwnHole(mesh)) {
+            console.log(`✅ ¡${mesh.userData.label} encajó correctamente!`);
+        }
+    },
 });
 
 // ─── UI + Responsive + Bucle principal ─────────────────────────────
