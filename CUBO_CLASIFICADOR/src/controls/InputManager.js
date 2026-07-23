@@ -29,7 +29,7 @@ export function createInputManager() {
         return el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable;
     }
 
-    window.addEventListener('keydown', (e) => {
+    const _onKeyDown = (e) => {
         // No interceptar si el usuario está escribiendo en un campo de texto
         if (isInputField(e.target)) return;
 
@@ -39,19 +39,22 @@ export function createInputManager() {
         if (CODE_TO_KEY[e.code]) keys[CODE_TO_KEY[e.code]] = true;
 
         if (PREVENT_KEYS.includes(e.key)) e.preventDefault();
-    });
+    };
 
-    window.addEventListener('keyup', (e) => {
+    const _onKeyUp = (e) => {
         if (isInputField(e.target)) return;
 
         keys[e.key] = false;
         if (CODE_TO_KEY[e.code]) keys[CODE_TO_KEY[e.code]] = false;
-    });
+    };
 
-    // ─── Pointer Lock ────────────────────────────────────────────
-    document.addEventListener('pointerlockchange', () => {
+    const _onPointerLockChange = () => {
         locked = document.pointerLockElement !== null;
-    });
+    };
+
+    window.addEventListener('keydown', _onKeyDown);
+    window.addEventListener('keyup', _onKeyUp);
+    document.addEventListener('pointerlockchange', _onPointerLockChange);
 
     // ─── API pública ──────────────────────────────────────────────
     return {
@@ -70,6 +73,15 @@ export function createInputManager() {
          */
         isPointerLocked() {
             return locked;
+        },
+
+        /**
+         * Remueve los event listeners asignados al window y document.
+         */
+        dispose() {
+            window.removeEventListener('keydown', _onKeyDown);
+            window.removeEventListener('keyup', _onKeyUp);
+            document.removeEventListener('pointerlockchange', _onPointerLockChange);
         },
     };
 }
