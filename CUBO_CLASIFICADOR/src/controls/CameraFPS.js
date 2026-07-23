@@ -10,7 +10,7 @@ import * as THREE from 'three';
  * @param {THREE.WebGLRenderer} renderer
  * @param {object} roomBounds        — { half: number, height: number, margin: number }
  * @param {THREE.Mesh[]} obstacles   — meshes con los que colisionar
- * @param {{ current: boolean, justEnded: boolean }} draggingRef — ref compartida con DragManager
+ * @param {{ current: boolean }} draggingRef — ref compartida con DragManager
  * @param {object} inputManager      — { isDown(key), isPointerLocked() }
  */
 export function setupCameraFPS(camera, renderer, roomBounds, obstacles = [], draggingRef = { current: false }, inputManager) {
@@ -26,8 +26,7 @@ export function setupCameraFPS(camera, renderer, roomBounds, obstacles = [], dra
     // Click en canvas → bloquear mouse para control de cámara
     const el = renderer.domElement;
     const onCanvasClick = () => {
-        // NO bloquear si se acaba de soltar un drag (click viene del pointerup del drag)
-        if (!inputManager.isPointerLocked() && !draggingRef.current && !draggingRef.justEnded) {
+        if (!inputManager.isPointerLocked() && !draggingRef.current) {
             el.requestPointerLock();
         }
     };

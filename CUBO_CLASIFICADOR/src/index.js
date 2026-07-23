@@ -42,7 +42,7 @@ const textures = createTextures();
 const buildMaterial = createMaterialFactory(textures);
 
 // ─── Refs compartidas entre módulos ────────────────────────────────
-const draggingRef = { current: false, justEnded: false };
+const draggingRef = { current: false };
 const activeCameraRef = { current: cam };
 
 // ─── Físicas (cannon-es) ───────────────────────────────────────────
@@ -89,11 +89,7 @@ const dragManager = setupDragManager(activeCameraRef, renderer, {
         if (interfaceCtrl) interfaceCtrl.onPieceSelected(mesh);
     },
     onDragStart: () => { draggingRef.current = true; },
-    onDragEnd:   () => {
-        draggingRef.current = false;
-        draggingRef.justEnded = true;
-        setTimeout(() => { draggingRef.justEnded = false; }, 120);
-    },
+    onDragEnd:   () => { draggingRef.current = false; },
 });
 
 // ─── UI + Responsive + Bucle principal ─────────────────────────────
