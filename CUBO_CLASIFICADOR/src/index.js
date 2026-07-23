@@ -57,6 +57,98 @@ function tryClassify(mesh) {
     }
 }
 
+// ─── Cronómetro ────────────────────────────────────────────────────
+const timerEl = document.getElementById('timer');
+const timerDisplay = document.getElementById('timer-display');
+let timerMinutes = 1;
+let timerSeconds = 0;
+let timerRunning = false;
+let timerInterval = null;
+let timerStarted = false; // para que arranque UNA sola vez
+
+function timerUpdateDisplay() {
+    const mm = String(timerMinutes).padStart(2, '0');
+    const ss = String(timerSeconds).padStart(2, '0');
+    timerDisplay.textContent = `${mm}:${ss}`;
+}
+
+function timerStart() {
+    if (timerRunning || timerStarted) return;
+    timerStarted = true;
+    timerRunning = true;
+    timerEl.classList.add('running');
+    timerInterval = setInterval(() => {
+        if (timerSeconds === 0) {
+            if (timerMinutes === 0) {
+                // Se acabó el tiempo
+                clearInterval(timerInterval);
+                timerRunning = false;
+                timerDisplay.textContent = '00:00';
+                timerDisplay.style.color = '#ff5566';
+                console.log('⏰ ¡Tiempo agotado!');
+                return;
+            }
+            timerMinutes--;
+            timerSeconds = 59;
+        } else {
+            timerSeconds--;
+        }
+        timerUpdateDisplay();
+    }, 1000);
+}
+
+function timerReset() {
+    if (timerInterval) clearInterval(timerInterval);
+    timerRunning = false;
+    timerStarted = false;
+    timerMinutes = 1;
+    timerSeconds = 0;
+    timerEl.classList.remove('running');
+    timerDisplay.style.color = '';
+    timerUpdateDisplay();
+}
+
+// Botones +/-
+document.getElementById('timer-minus').onclick = () => {
+    if (timerRunning || timerStarted) return;
+    if (timerMinutes > 1) timerMinutes--;
+    timerUpdateDisplay();
+};
+document.getElementById('timer-plus').onclick = () => {
+    if (timerRunning || timerStarted) return;
+    if (timerMinutes < 5) timerMinutes++;
+    timerUpdateDisplay();
+};
+
+// ─── Reset de piezas ──────────────────────────────────────────────
+function resetPieces() {
+    for (const child of pieces.children) {
+        if (!child.isMesh) continue;
+        const orig = child.userData.originalPos;
+        if (!orig) continue;
+
+        // Posición visual
+        child.position.copy(orig);
+        child.quaternion.identity();
+
+        // Posición física
+        const body = child.userData.body;
+        if (body) {
+            body.position.set(orig.x, orig.y, orig.z);
+            body.quaternion.set(0, 0, 0, 1);
+            body.velocity.setZero();
+            body.angularVelocity.setZero();
+            body.wakeUp();
+        }
+    }
+
+    // Resetear clasificación + cronómetro
+    classifiedLabels.clear();
+    if (interfaceCtrl) interfaceCtrl.resetScores();
+    timerReset();
+    console.log('🔄 Piezas reiniciadas');
+}
+
 // ─── Físicas (cannon-es) ───────────────────────────────────────────
 const physicsWorld = createPhysicsWorld();
 const bodyFactory = createBodyFactory(physicsWorld.world, physicsWorld.materials);
@@ -103,11 +195,14 @@ const dragManager = setupDragManager(activeCameraRef, renderer, {
     onSelect: (mesh) => {
         if (interfaceCtrl) interfaceCtrl.onPieceSelected(mesh);
     },
-    onDragStart: () => { draggingRef.current = true; },
+    onDragStart: () => {
+        draggingRef.current = true;
+        timerStart();
+    },
     onDragEnd:   (mesh) => {
         // Delay de 120ms para evitar que el click post-suelte active el pointer lock
         setTimeout(() => { draggingRef.current = false; }, 120);
-        tryClassify(mesh);
+        // No clasificar acá — esperamos a que caiga por el hueco (onPostPhysics)
     },
 });
 
@@ -135,8 +230,8 @@ setupAnimationLoop({
             if (!child.isMesh) continue;
             const label = child.userData.label;
             if (classifiedLabels.has(label)) continue;
-            // Ya no está siendo arrastrada + está sobre su hueco → clasificar
-            if (child.position.y < WALL_HEIGHT + PANEL_DEPTH) {
+            // Solo si YA atravesó el hueco (Y debajo del panel, dentro del cubo)
+            if (child.position.y < WALL_HEIGHT) {
                 tryClassify(child);
             }
         }
@@ -154,4 +249,14 @@ document.getElementById('username-form').addEventListener('submit', (e) => {
     document.getElementById('hud-title').textContent = name.toUpperCase();
     document.getElementById('loading-overlay').classList.add('hidden');
     console.log(`👤 Bienvenido, ${name}`);
+});
+
+// ─── Botón + tecla 'R' para reiniciar ─────────────────────────────
+document.getElementById('reset-btn').onclick = resetPieces;
+window.addEventListener('keydown', (e) => {
+    if (e.key === 'r' || e.key === 'R') {
+        // No reiniciar si está escribiendo en un input
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+        resetPieces();
+    }
 });

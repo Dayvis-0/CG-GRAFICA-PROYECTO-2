@@ -240,6 +240,61 @@ canvas { display: block; }
 }
 #reset-btn:hover { background: #5a2030; border-color: #e06090; }
 
+/* ── Cronómetro ── */
+#timer {
+    position: absolute;
+    top: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    color: #d7f9ff;
+    background: rgba(10, 14, 20, 0.75);
+    border: 2px solid #2a6f7a;
+    border-radius: 10px;
+    padding: 10px 24px;
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    font-family: 'Courier New', monospace;
+    z-index: 10;
+    user-select: none;
+    box-shadow: 0 0 20px rgba(42,111,122,0.2);
+}
+#timer-display {
+    min-width: 110px;
+    text-align: center;
+    color: #5be3ff;
+    font-weight: bold;
+    font-size: 36px;
+    letter-spacing: 4px;
+}
+#timer.running #timer-display {
+    color: #9be8a0;
+}
+.timer-btn {
+    background: #11242a;
+    border: 2px solid #2a6f7a;
+    color: #cfeff5;
+    cursor: pointer;
+    border-radius: 6px;
+    font-size: 24px;
+    width: 38px;
+    height: 38px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: 0.15s;
+    font-family: 'Courier New', monospace;
+    line-height: 1;
+    font-weight: bold;
+}
+.timer-btn:hover { background: #1c3a42; border-color: #5be3ff; }
+.timer-btn:active { background: #2a6f7a; }
+#timer.running .timer-btn {
+    opacity: 0.35;
+    pointer-events: none;
+}
+
 /* Hint */
 #hint {
     position: absolute;

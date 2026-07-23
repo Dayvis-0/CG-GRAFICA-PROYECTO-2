@@ -166,5 +166,10 @@ export function setupInterface({
                 updateHUD();
             }
         },
+        /** Reinicia todos los puntajes a 0 */
+        resetScores() {
+            for (const key in scores) scores[key] = 0;
+            updateHUD();
+        },
     };
 }

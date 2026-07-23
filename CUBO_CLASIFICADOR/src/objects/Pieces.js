@@ -66,6 +66,7 @@ export function createPieces() {
         mesh.userData.pieceType = cfg.pieceType;
         mesh.userData.pieceArgs = cfg.pieceArgs;
         mesh.userData.minY = cfg.pieceY;
+        mesh.userData.originalPos = new THREE.Vector3(cfg.piecePos.x, cfg.pieceY, cfg.piecePos.z);
         group.add(mesh);
     }
 
