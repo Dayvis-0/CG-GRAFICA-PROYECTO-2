@@ -131,6 +131,13 @@ export function createBodyFactory(world, materials) {
                 const segments = mesh.userData.pieceArgs?.[3] ?? 6;
                 return new CANNON.Cylinder(r, r, h, segments);
             }
+            case 'triangle': {
+                // Prisma triangular: Cylinder con 3 segmentos.
+                // pieceArgs = [r, depth]; usamos radius igual top y bottom.
+                const r = size.x / 2;
+                const h = size.y;
+                return new CANNON.Cylinder(r, r, h, 3);
+            }
             case 'star': {
                 // La estrella es cóncava, pero Trimesh no colisiona contra Box
                 // (que es lo que usa el panel ahora). Usamos el bounding box

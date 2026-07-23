@@ -8,7 +8,7 @@
  *   cx:          number,
  *   cy:          number,
  *   hole:        object,
- *   pieceType:   'sphere'|'box'|'cone'|'star',
+ *   pieceType:   'sphere'|'box'|'triangle'|'star',
  *   pieceArgs:   number[],        // argumentos para el constructor de la geometría
  *   pieceColor:  number,
  *   piecePos:    {x:number, z:number},
@@ -38,15 +38,15 @@ export const HOLE_CONFIGS = [
         pieceY: 0.45,
     },
     {
-        label: 'Cono',
+        label: 'Triángulo',
         shape: 'triangle',
         cx: -1.1, cy: -1.1,
         hole: { r: 0.7 },
-        pieceType: 'cone',
-        pieceArgs: [0.65, 1.1, 32],
+        pieceType: 'triangle',
+        pieceArgs: [0.65, 0.9],
         pieceColor: 0x44dd88,
         piecePos: { x: -2.25, z: 3.9 },
-        pieceY: 0.55,
+        pieceY: 0.45,
     },
     {
         label: 'Estrella',

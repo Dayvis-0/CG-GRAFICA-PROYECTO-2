@@ -8,6 +8,21 @@ const GEO_BUILDERS = {
     box:      (args) => new THREE.BoxGeometry(...args),
     cone:     (args) => new THREE.ConeGeometry(...args),
     cylinder: (args) => new THREE.CylinderGeometry(...args),
+    triangle: ([r, depth]) => {
+        const shape = new THREE.Shape();
+        for (let i = 0; i < 3; i++) {
+            const angle = Math.PI / 2 - (i / 3) * Math.PI * 2;
+            const x = r * Math.cos(angle);
+            const y = r * Math.sin(angle);
+            if (i === 0) shape.moveTo(x, y);
+            else shape.lineTo(x, y);
+        }
+        shape.closePath();
+        const geo = new THREE.ExtrudeGeometry(shape, { depth, bevelEnabled: false });
+        geo.translate(0, 0, -depth / 2);
+        geo.rotateX(-Math.PI / 2);
+        return geo;
+    },
     star: ([outerR, innerR, depth, points = 4]) => {
         const verts = computeStarPoints(outerR, innerR, points);
         const shape = new THREE.Shape();
