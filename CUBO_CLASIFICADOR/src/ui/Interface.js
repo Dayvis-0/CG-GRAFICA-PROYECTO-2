@@ -153,7 +153,15 @@ export function setupInterface({
     for (const cfg of HOLE_CONFIGS) {
         const row = document.createElement('div');
         row.className = 'row';
-        row.innerHTML = `${cfg.label}: <span class="status" id="score-${cfg.label}">0</span>`;
+        
+        const labelText = document.createTextNode(`${cfg.label}: `);
+        const spanStatus = document.createElement('span');
+        spanStatus.className = 'status';
+        spanStatus.id = `score-${cfg.label}`;
+        spanStatus.textContent = '0';
+        
+        row.appendChild(labelText);
+        row.appendChild(spanStatus);
         scoresContainer.appendChild(row);
     }
 
