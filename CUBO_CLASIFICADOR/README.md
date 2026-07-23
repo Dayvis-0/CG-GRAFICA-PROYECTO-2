@@ -52,9 +52,8 @@ El **HUD** en la esquina superior izquierda muestra el estado actual del objeto 
 CUBO_CLASIFICADOR/
 ├── index.html                 # Entry point: import map, HUD, panel de control
 ├── style.css                  # Tema oscuro cyber-punk con acentos cian
-├── textures/                  # Sprites/imagenes para texturas (si aplica)
 └── src/
-    ├── index.js              # Orquestador: conecta todos los modulos
+    ├── index.js              # Orquestador: conecta todos los modulos con try-catch
     │
     ├── core/                  # Nucleo Three.js
     │   ├── SceneManager.js       # Escena con fondo 0x141416
@@ -76,33 +75,38 @@ CUBO_CLASIFICADOR/
     │   └── MaterialFactory.js    # Fabrica: lambert / phong / standard + textura + wireframe toggle
     │
     ├── controls/              # Input y camara
-    │   ├── InputManager.js       # Input centralizado con pointer lock + fallback teclado no-QWERTY
+    │   ├── InputManager.js       # Input centralizado con pointer lock + fallback teclado no-QWERTY + dispose
     │   ├── CameraFPS.js          # Camara FPS: pitch/yaw, WASD, colision AABB contra obstaculos
-    │   └── DragManager.js        # Arrastre con raycasting, modo kinematic, colision AABB por eje, limitStep
+    │   └── DragManager.js        # Arrastre con raycasting, modo kinematic, updateArrowInput
     │
     ├── physics/               # Simulacion fisica (cannon-es)
     │   ├── PhysicsWorld.js       # Mundo con gravedad -35, solver 30 iter, contact materials, sleep
     │   ├── BodyFactory.js        # Fabrica de bodies: piezas (dinamicos), paredes/panel/piso (estaticos)
-    │   └── PhysicsSystem.js      # Step por frame, sync mesh-body, modo kinematic, drag trail para release velocity
+    │   └── PhysicsSystem.js      # Step por frame, sync mesh-body, modo kinematic, drag trail
     │
     ├── game/
-    │   └── ClassifierRules.js    # Logica: ?la pieza esta sobre su hueco? via HoleDetector
+    │   ├── ClassifierRules.js    # Logica: verifica si la pieza esta sobre su hueco
+    │   ├── HoleDetector.js       # Deteccion punto-en-hueco con tolerancia (circulo, cuadrado, triangulo, estrella)
+    │   └── Timer.js              # Modulo desacoplado para gestion del temporizador del juego
     │
     ├── ui/
     │   └── Interface.js          # HUD + panel de control: seleccion, materiales, texturas, wireframe, luces
     │
     ├── animations/
-    │   └── AnimationLoop.js      # Bucle principal: delta capped 1/30, fisicas, clamp, input, render
+    │   └── AnimationLoop.js      # Bucle principal: delta capped 1/30, fisicas, safety net, render
     │
     ├── utils/                 # Funciones transversales
-    │   ├── ResizeHandler.js      # Responsive: resize camara + renderer
-    │   ├── geometry.js           # pointInTriangle, pointInPolygon, computeStarPoints (compartido huecos y piezas)
-    │   ├── HoleDetector.js       # Deteccion punto-en-hueco con tolerancia 0.1 (circulo, cuadrado, triangulo, estrella)
+    │   ├── ResizeHandler.js      # Responsive: resize camara + renderer optimizado con requestAnimationFrame
+    │   ├── CollisionHelper.js    # Helper centralizado para consultas AABB (intersectsAnyObstacle, isPointInsideBox)
+    │   ├── math.js               # Utilidad de restriccion espacial (clampToBounds)
+    │   ├── geometry.js           # pointInTriangle, pointInPolygon, computeStarPoints (re-exporta SSOT)
     │   └── holeShapes.js         # Generacion de Paths Three.js para los 4 tipos de hueco
     │
     └── data/                  # Configuracion centralizada
         ├── holeConfigs.js          # FUENTE UNICA: posicion, tamanio, color de cada hueco y pieza
-        └── classifierDimensions.js # Constantes: OUTER=4, WALL_HEIGHT=2.5, PANEL_DEPTH=0.5, etc.
+        ├── classifierDimensions.js # Constantes: OUTER=4, WALL_HEIGHT=2.5, PANEL_DEPTH=0.5, etc.
+        ├── physicsConstants.js     # Constantes de fisica Cannon-es (restitution, friction, damping)
+        └── shapeVertices.js        # Single Source of Truth para construccion de vertices 2D/3D
 ```
 
 ---
@@ -127,14 +131,7 @@ CUBO_CLASIFICADOR/
 
 ### Panel perforado (fisica)
 
-El panel del clasificador NO usa `CANNON.Trimesh`. `Trimesh` en cannon-es solo soporta colisiones `Sphere vs Trimesh` y `Plane vs Trimesh` — las demas formas (Box, Cylinder) se traspasan. En su lugar, `BodyFactory.registerStatic(mesh, 'panel')` construye una **grilla de `CANNON.Box`** que cubre las partes solidas del panel:
-
-1. Divide el panel en una grilla de celdas de 0.25 unidades
-2. Para cada celda, verifica si su centro cae dentro de un hueco via `isInsideAnyHole()` (con margen `halfCell` para compensar intrusion de celdas vecinas)
-3. Si esta dentro de un hueco, la celda NO se crea (dejando el hueco vacio)
-4. Si esta fuera, se agrega un `CANNON.Box` como shape del body compuesto
-
-Esto garantiza compatibilidad con TODAS las formas de piezas (Sphere, Box, Cylinder con 3 segmentos para triangulo, Cylinder con 8 segmentos para estrella).
+El panel del clasificador construye una grilla estatica de cuerpos `CANNON.Box` compuestos que omiten las zonas con huecos mediante `isInsideAnyHole()`. Esto permite colisiones estables para todas las formas 3D (esfera, cubo, prisma triangular y estrella) sin las limitaciones de compatibilidad de `CANNON.Trimesh`.
 
 ### Huecos visuales (ExtrudeGeometry)
 
