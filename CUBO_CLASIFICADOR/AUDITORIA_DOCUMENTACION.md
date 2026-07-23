@@ -48,57 +48,39 @@ Se ha realizado una revisión integral de la documentación del proyecto **Cubo 
 
 ### 2. AUDITORIA_PROYECTO.md
 
-#### OBS-DOC-004 — Duplicación excesiva de información entre secciones
-- **Archivo:** `AUDITORIA_PROYECTO.md` (líneas 10-570 vs 625-638)
+#### OBS-DOC-004 — Duplicación excesiva de información entre secciones ✅
+- **Archivo:** `AUDITORIA_PROYECTO.md`
 - **Tipo de observación:** Concisión / Redundancia
-- **Descripción breve:** Cada hallazgo se documenta en detalle con 8 campos individuales y luego se repite en una tabla resumen al final del documento.
-- **Motivo:** La repetición de los códigos de hallazgo y descripciones incrementa el tamaño del archivo a más de 32 KB, dificultando su mantenibilidad.
-- **Recomendación:** Mantener las fichas detalladas de hallazgos y simplificar la tabla final únicamente a `ID | Categoría | Estado`.
-- **Prioridad:** Media
+- **Estado:** ✅ Completado — Se simplificó la tabla de fases final únicamente a `Fase | Objetivo | Estado`, evitando la repetición innecesaria de listas de IDs de hallazgos.
 
-#### OBS-DOC-005 — Formato y estructura pesada de lectura
+#### OBS-DOC-005 — Formato y estructura pesada de lectura ✅
 - **Archivo:** `AUDITORIA_PROYECTO.md`
 - **Tipo de observación:** Legibilidad / Organización
-- **Descripción breve:** El documento utiliza bloques extensos de texto con múltiples separadores horizontales (`---`) seguidos, lo que fragmenta la lectura visual.
-- **Motivo:** Dificulta la navegación fluida a través de los títulos de las 11 fases.
-- **Recomendación:** Utilizar encabezados plegables en Markdown (`<details><summary>...`) para agrupar el historial de fases completadas.
-- **Prioridad:** Baja
+- **Estado:** ✅ Completado — Se reorganizó la estructura del archivo y el encabezado de estado general para una lectura ágil y limpia.
 
 ---
 
 ### 3. Comentarios en el Código Fuente (`src/`)
 
-#### OBS-DOC-006 — Comentarios de numeración de pasos redundantes en bucles de render
-- **Archivo:** `src/animations/AnimationLoop.js` (líneas 103-121)
+#### OBS-DOC-006 — Comentarios de numeración de pasos redundantes en bucles de render ✅
+- **Archivo:** `src/animations/AnimationLoop.js`
 - **Tipo de observación:** Comentarios en código / Redundancia
-- **Descripción breve:** Comentarios numerados (`// 1. Movimiento FPS`, `// 2. Físicas`, `// 3. Safety net`, `// 4. Callback...`) explican llamadas a funciones autónomas con nombres auto-descriptivos.
-- **Motivo:** `fpsControl.update()`, `physicsSystem.update(dt)` y `renderer.render()` ya expresan claramente lo que hacen. Los comentarios numerados resultan superfluos.
-- **Recomendación:** Conservar solo comentarios sobre comportamientos no evidentes (e.g. la justificación del `safety net` de clamping).
-- **Prioridad:** Baja
+- **Estado:** ✅ Completado — Eliminados los comentarios numerados superfluos en la secuencia de renderizado.
 
-#### OBS-DOC-007 — Comentarios de referencia histórica / Refactorización en código de producción
-- **Archivo:** `src/controls/CameraFPS.js` (líneas 65, 102), `src/controls/DragManager.js` (líneas 43-44, 68, 94), `src/animations/AnimationLoop.js` (línea 50)
+#### OBS-DOC-007 — Comentarios de referencia histórica / Refactorización en código de producción ✅
+- **Archivo:** `src/controls/CameraFPS.js`, `src/controls/DragManager.js`, `src/animations/AnimationLoop.js`
 - **Tipo de observación:** Comentarios en código / Mantenibilidad
-- **Descripción breve:** Existen comentarios con identificadores de refactorización como `// PERF-001`, `// PERF-002`, `// DUP-001: Usar CollisionHelper centralizado`.
-- **Motivo:** Estos identificadores de tareas/tickets fueron útiles durante la fase de corrección, pero ensucian el código fuente final y pierden relevancia técnica permanente.
-- **Recomendación:** Remover las etiquetas de tickets (`PERF-xxx`, `DUP-xxx`) dejando únicamente la explicación técnica concisa del código.
-- **Prioridad:** Media
+- **Estado:** ✅ Completado — Removidas las etiquetas de tickets/fases (`PERF-xxx`, `DUP-xxx`), conservando solo las explicaciones técnicas limpias.
 
-#### OBS-DOC-008 — Comentarios que describen sintaxis JavaScript obvia
-- **Archivo:** `src/controls/DragManager.js` (línea 31), `src/game/Timer.js` (línea 16), `src/ui/Interface.js` (líneas 166, 173)
+#### OBS-DOC-008 — Comentarios que describen sintaxis JavaScript obvia ✅
+- **Archivo:** `src/controls/DragManager.js`, `src/game/Timer.js`, `src/ui/Interface.js`
 - **Tipo de observación:** Comentarios en código / Redundancia
-- **Descripción breve:** Comentarios inline que explican comportamientos nativos o directos de variables (e.g. `let dragStartY = null; // Y real de la pieza al iniciar el drag` o `let started = false; // para que arranque UNA sola vez`).
-- **Motivo:** El nombre de la variable y el contexto del código expresan la intención por sí mismos.
-- **Recomendación:** Eliminar comentarios inline que solo parafraseen el nombre de la variable.
-- **Prioridad:** Baja
+- **Estado:** ✅ Completado — Eliminados los comentarios inline redundantes que explicaban variables auto-descriptivas.
 
-#### OBS-DOC-009 — Comentarios de JSDoc ausentes en utilidades nuevas
+#### OBS-DOC-009 — Comentarios de JSDoc ausentes en utilidades nuevas ✅
 - **Archivo:** `src/data/shapeVertices.js`
 - **Tipo de observación:** Comentarios en código / Inconsistencia
-- **Descripción breve:** Las funciones exportadas dentro de `SHAPE_VERTICES` (como `getVertices`) no cuentan con anotaciones JSDoc que describan sus parámetros ni el tipo de dato retornado.
-- **Motivo:** A diferencia del resto del proyecto donde JSDoc se utiliza consistentemente, este módulo carece de las anotaciones correspondientes.
-- **Recomendación:** Agregar bloques JSDoc `@param` y `@returns` a los métodos de `SHAPE_VERTICES`.
-- **Prioridad:** Media
+- **Estado:** ✅ Completado — Añadidos bloques JSDoc `@param` y `@returns` a los métodos de `SHAPE_VERTICES`.
 
 ---
 
@@ -109,12 +91,12 @@ Se ha realizado una revisión integral de la documentación del proyecto **Cubo 
 | **OBS-DOC-001** | `README.md` | Inconsistencia / Rutas desactualizadas en árbol | ✅ Completado |
 | **OBS-DOC-002** | `README.md` | Omisión / Falta documentación de nuevos módulos | ✅ Completado |
 | **OBS-DOC-003** | `README.md` | Concisión / Explicaciones técnicas excesivas | ✅ Completado |
-| **OBS-DOC-004** | `AUDITORIA_PROYECTO.md` | Redundancia / Duplicación de datos | **Media** |
-| **OBS-DOC-005** | `AUDITORIA_PROYECTO.md` | Legibilidad / Formato pesado | **Baja** |
-| **OBS-DOC-006** | `src/animations/AnimationLoop.js` | Comentarios redundantes en bucle de render | **Baja** |
-| **OBS-DOC-007** | Múltiples en `src/` | Comentarios con marcas temporales de refactor (`PERF-xxx`, `DUP-xxx`) | **Media** |
-| **OBS-DOC-008** | `src/controls/DragManager.js`, `src/game/Timer.js` | Comentarios que explican código explícito/obvio | **Baja** |
-| **OBS-DOC-009** | `src/data/shapeVertices.js` | Inconsistencia / JSDoc ausente en módulo nuevo | **Media** |
+| **OBS-DOC-004** | `AUDITORIA_PROYECTO.md` | Redundancia / Duplicación de datos | ✅ Completado |
+| **OBS-DOC-005** | `AUDITORIA_PROYECTO.md` | Legibilidad / Formato pesado | ✅ Completado |
+| **OBS-DOC-006** | `src/animations/AnimationLoop.js` | Comentarios redundantes en bucle de render | ✅ Completado |
+| **OBS-DOC-007** | Múltiples en `src/` | Comentarios con marcas temporales de refactor (`PERF-xxx`, `DUP-xxx`) | ✅ Completado |
+| **OBS-DOC-008** | `src/controls/DragManager.js`, `src/game/Timer.js` | Comentarios que explican código explícito/obvio | ✅ Completado |
+| **OBS-DOC-009** | `src/data/shapeVertices.js` | Inconsistencia / JSDoc ausente en módulo nuevo | ✅ Completado |
 
 ---
 

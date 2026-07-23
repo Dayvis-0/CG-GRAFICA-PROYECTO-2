@@ -28,7 +28,7 @@ export function setupDragManager(activeCameraRef, renderer, {
     /** @type {THREE.Mesh | null} */
     let selected = null;
     let dragging = false;
-    let dragStartY = null; // Y real de la pieza al iniciar el drag
+    let dragStartY = null;
 
     // ─── AABBs de obstáculos (solo clasificador, pre-computados) ──
     const obstacleBoxes = obstacles.map(m => new THREE.Box3().setFromObject(m));
@@ -40,8 +40,7 @@ export function setupDragManager(activeCameraRef, renderer, {
     const _offMin    = new THREE.Vector3();
     const _offMax    = new THREE.Vector3();
 
-    // Half-size precacheado: se calcula UNA vez en onPointerDown y se reutiliza
-    // en todo el flujo de drag, evitando llamar setFromObject (~8 veces/frame).
+    // Half-size precacheado: se calcula en onPointerDown y se reutiliza durante el drag
     const _cachedHalfSize = new THREE.Vector3();
 
     // ─── Colisión contra obstáculos del clasificador (AABB) ──────
@@ -53,7 +52,6 @@ export function setupDragManager(activeCameraRef, renderer, {
     function overlapsClassifier(pos) {
         if (obstacleBoxes.length === 0) return false;
 
-        // AABB de la pieza centrado en la posición candidata (usa half-size precacheado)
         _candBox.min.set(
             pos.x - _cachedHalfSize.x,
             pos.y - _cachedHalfSize.y,
@@ -65,7 +63,6 @@ export function setupDragManager(activeCameraRef, renderer, {
             pos.z + _cachedHalfSize.z
         );
 
-        // DUP-001: Usar CollisionHelper centralizado
         return intersectsAnyObstacle(_candBox, obstacleBoxes);
     }
 
@@ -91,9 +88,7 @@ export function setupDragManager(activeCameraRef, renderer, {
      * @returns {THREE.Vector3}
      */
     function clampToRoom(pos) {
-        // DUP-002: Usar utilidad clampToBounds compartida
         clampToBounds(pos, roomBounds, { x: _cachedHalfSize.x, z: _cachedHalfSize.z });
-        // Y: sin piso (minY ya lo maneja), solo techo
         const h = roomBounds.height;
         pos.y = Math.min(h - _cachedHalfSize.y - ROOM_MARGIN, pos.y);
 

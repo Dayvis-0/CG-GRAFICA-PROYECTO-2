@@ -62,7 +62,7 @@ export function setupCameraFPS(camera, renderer, roomBounds, obstacles = [], dra
     const target = new THREE.Vector3();
     const COLLIDE_MARGIN = 0.35;
 
-    // PERF-003 / DUP-001: Precalcular AABBs de obstáculos estáticos
+    // Precalcular AABBs de obstáculos estáticos
     const obstacleBoxes = obstacles.map(mesh => new THREE.Box3().setFromObject(mesh));
 
     function isBlocked(pos) {
@@ -99,7 +99,6 @@ export function setupCameraFPS(camera, renderer, roomBounds, obstacles = [], dra
 
             target.copy(camera.position).add(move);
 
-            // DUP-002: Usar utilidad clampToBounds compartida
             clampToBounds(target, roomBounds);
             target.y = Math.max(yMin, Math.min(yMax, target.y));
 

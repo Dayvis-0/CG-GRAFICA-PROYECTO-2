@@ -14,7 +14,7 @@ export function createTimer() {
     let seconds  = 0;
     let running  = false;
     let interval = null;
-    let started  = false; // para que arranque UNA sola vez
+    let started  = false;
 
     function updateDisplay() {
         const mm = String(minutes).padStart(2, '0');

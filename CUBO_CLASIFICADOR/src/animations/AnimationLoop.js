@@ -47,7 +47,7 @@ export function setupAnimationLoop({
             const body = child.userData.body;
             if (!body || body.type !== CANNON.Body.DYNAMIC) continue;
 
-            // Usar half-size cacheado en lugar de setFromObject (PERF-002)
+            // Usar half-size cacheado en lugar de setFromObject
             let hs = _halfSizeCache.get(child);
             if (!hs) {
                 _box.setFromObject(child);
@@ -100,25 +100,19 @@ export function setupAnimationLoop({
         const dt = Math.min((now - lastTime) / 1000, 1 / 30);
         lastTime = now;
 
-        // 1. Movimiento FPS (WASD + mouse look)
         fpsControl.update();
 
         const draggedMesh = dragManager.getSelected();
 
-        // 2. Físicas (cannon-es step + sincronizar meshes)
         physicsSystem.update(dt, draggedMesh);
 
-        // 3. Safety net: clampa piezas dinámicas al cuarto
-        //     (evita que tunneling o errores del solver las saquen del recinto)
+        // Safety net: clampa piezas dinámicas al cuarto para evitar tunneling
         clampToRoomBounds(draggedMesh);
 
-        // 4. Callback post-física (clasificación, etc.)
         if (onPostPhysics) onPostPhysics(draggedMesh);
 
-        // 5. Movimiento con flechas (delegado a DragManager)
         dragManager.updateArrowInput(inputManager);
 
-        // 6. Render
         renderer.render(scene, activeCameraRef.current);
     }
 

@@ -6,6 +6,11 @@
 export const SHAPE_VERTICES = {
     triangle: {
         pointsCount: 3,
+        /**
+         * Calcula los vértices 2D de un triángulo equilátero.
+         * @param {number} r - Radio circunscrito
+         * @returns {{ x: number, y: number }[]}
+         */
         getVertices(r) {
             const verts = [];
             for (let i = 0; i < 3; i++) {
@@ -20,6 +25,13 @@ export const SHAPE_VERTICES = {
     },
     star: {
         defaultPoints: 4,
+        /**
+         * Calcula los vértices 2D de una estrella de N puntas.
+         * @param {number} outerR - Radio exterior
+         * @param {number} innerR - Radio interior
+         * @param {number} [points=4] - Cantidad de puntas
+         * @returns {{ x: number, y: number }[]}
+         */
         getVertices(outerR, innerR, points = 4) {
             const verts = [];
             for (let i = 0; i < points * 2; i++) {
