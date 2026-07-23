@@ -1,6 +1,7 @@
 import * as CANNON from 'cannon-es';
 import * as THREE from 'three';
 import { pointInTriangle, pointInPolygon, computeStarPoints } from '../utils/geometry.js';
+import { PHYSICS_CONSTANTS } from '../data/physicsConstants.js';
 
 /**
  * Verifica si un punto (sx, sy) en el espacio del Shape cae dentro de algún hueco.

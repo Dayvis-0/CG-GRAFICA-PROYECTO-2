@@ -126,6 +126,8 @@ try {
     // ya detecta colisiones con huecos reales vía cannon).
     const dragObstacles = [...walls];
 
+    const POST_DRAG_LOCK_DELAY = 120; // ms de espera post-suelte para evitar pointer lock accidental
+
     let interfaceCtrl;
     const dragManager = setupDragManager(activeCameraRef, renderer, {
         piecesGroup: pieces,
@@ -142,8 +144,8 @@ try {
             timer.start();
         },
         onDragEnd:   (mesh) => {
-            // Delay de 120ms para evitar que el click post-suelte active el pointer lock
-            setTimeout(() => { draggingRef.current = false; }, 120);
+            // Evita que el click post-suelte active el pointer lock
+            setTimeout(() => { draggingRef.current = false; }, POST_DRAG_LOCK_DELAY);
             // No clasificar acá — esperamos a que caiga por el hueco (onPostPhysics)
         },
     });
