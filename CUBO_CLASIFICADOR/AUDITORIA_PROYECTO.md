@@ -540,7 +540,7 @@ El proyecto es un juego 3D educativo de clasificación de figuras geométricas c
 
 ---
 
-# FASE 11 — CSS y Design Tokens
+# FASE 11 — CSS y Design Tokens ✅ COMPLETADA
 
 **Objetivo:** Mejorar mantenibilidad de los estilos.
 
@@ -634,7 +634,7 @@ El proyecto es un juego 3D educativo de clasificación de figuras geométricas c
 | 8 | Números mágicos | Bajo | Baja | Ninguna | MAG-001 ✅, MAG-002 ✅, MAG-003 ✅, MAG-004 ✅ |
 | 9 | Rendimiento menor | Nulo-Bajo | Baja | Ninguna | PERF-005 ✅, PERF-006 ✅, PERF-007 ✅ |
 | 10 | HTML y accesibilidad | Nulo | Baja | Ninguna | HTML-001 ✅, HTML-002 ✅, HTML-003 ✅ |
-| 11 | CSS y design tokens | Nulo | Baja | Ninguna | CSS-001, CSS-002 |
+| 11 | CSS y design tokens | Nulo | Baja | Ninguna | CSS-001 ✅, CSS-002 ✅ |
 
 > **Orden recomendado:** Las fases están ordenadas de mayor impacto + menor riesgo a menor impacto. Las fases 1 y 4 son las más seguras (bajo riesgo de romper funcionalidad). La fase 3 es la más arriesgada (tocar colisiones puede desestabilizar el juego).
 
