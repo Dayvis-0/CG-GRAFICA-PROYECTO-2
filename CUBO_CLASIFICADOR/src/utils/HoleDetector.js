@@ -3,30 +3,10 @@
  * Completamente puras — no dependen del estado de la escena.
  */
 
-import { computeStarPoints } from './geometry.js';
+import { computeStarPoints, pointInTriangle, pointInPolygon } from './geometry.js';
 
 // Tolerancia para que el usuario no necesite precisión milimétrica desde cámara FPS
 export const HOLE_TOLERANCE = 0.1;
-
-// ─── Helpers geométricos ───
-export function pointInTriangle(px, py, ax, ay, bx, by, cx, cy) {
-    const d = (by - cy) * (ax - cx) + (cx - bx) * (ay - cy);
-    const a = ((by - cy) * (px - cx) + (cx - bx) * (py - cy)) / d;
-    const b = ((cy - ay) * (px - cx) + (ax - cx) * (py - cy)) / d;
-    const c = 1 - a - b;
-    return a >= -0.01 && b >= -0.01 && c >= -0.01;
-}
-
-// Ray casting point-in-polygon (sirve para cualquier polígono, cóncavo o convexo)
-export function pointInPolygon(px, py, verts) {
-    let inside = false;
-    for (let i = 0, j = verts.length - 1; i < verts.length; j = i++) {
-        const xi = verts[i].x, yi = verts[i].y;
-        const xj = verts[j].x, yj = verts[j].y;
-        if ((yi > py) !== (yj > py) && px < (xj - xi) * (py - yi) / (yj - yi) + xi) inside = !inside;
-    }
-    return inside;
-}
 
 /**
  * Determina si un punto (sx, sy) en coordenadas del Shape cae dentro de un hueco configurado.

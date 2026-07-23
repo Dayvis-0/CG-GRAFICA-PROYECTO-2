@@ -1,5 +1,6 @@
 import * as CANNON from 'cannon-es';
 import * as THREE from 'three';
+import { pointInTriangle, pointInPolygon, computeStarPoints } from '../utils/geometry.js';
 
 /**
  * Verifica si un punto (sx, sy) en el espacio del Shape cae dentro de algún hueco.
@@ -52,36 +53,6 @@ function isInsideAnyHole(sx, sy, holeConfigs, halfCell) {
         }
     }
     return false;
-}
-
-// ─── Helpers geométricos locales (evitan depender de HoleDetector) ───
-function pointInTriangle(px, py, ax, ay, bx, by, cx, cy) {
-    const d = (by - cy) * (ax - cx) + (cx - bx) * (ay - cy);
-    const a = ((by - cy) * (px - cx) + (cx - bx) * (py - cy)) / d;
-    const b = ((cy - ay) * (px - cx) + (ax - cx) * (py - cy)) / d;
-    const c = 1 - a - b;
-    return a >= 0 && b >= 0 && c >= 0;
-}
-
-function pointInPolygon(px, py, verts) {
-    let inside = false;
-    for (let i = 0, j = verts.length - 1; i < verts.length; j = i++) {
-        const xi = verts[i].x, yi = verts[i].y;
-        const xj = verts[j].x, yj = verts[j].y;
-        if ((yi > py) !== (yj > py) && px < (xj - xi) * (py - yi) / (yj - yi) + xi) inside = !inside;
-    }
-    return inside;
-}
-
-/** Genera puntos de estrella para detección de hueco (copia local de geometry.js) */
-function computeStarPoints(outerR, innerR, points) {
-    const verts = [];
-    for (let i = 0; i < points * 2; i++) {
-        const angle = (i / (points * 2)) * Math.PI * 2 - Math.PI / 2;
-        const r = i % 2 === 0 ? outerR : innerR;
-        verts.push({ x: r * Math.cos(angle), y: r * Math.sin(angle) });
-    }
-    return verts;
 }
 
 /**

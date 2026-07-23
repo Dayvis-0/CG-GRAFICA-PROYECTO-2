@@ -26,7 +26,7 @@ El objetivo es llevar cada pieza al hueco que coincide con su forma. Cuando la p
 |-------|-------------|-------------------|-------|
 | **Esfera** | `SphereGeometry` (r=0.55) | Círculo | 🔴 Rojo |
 | **Cubo** | `BoxGeometry` (0.9³) | Cuadrado | 🔵 Azul |
-| **Cono** | `ConeGeometry` (r=0.65, h=1.1) | Triángulo equilátero | 🟢 Verde |
+| **Triángulo** | `ExtrudeGeometry` (prisma triangular, r=0.65, depth=0.9) | Triángulo equilátero | 🟢 Verde |
 | **Estrella** | `ExtrudeGeometry` (4 puntas) | Estrella 4 puntas | 🔷 Cian |
 
 ---
