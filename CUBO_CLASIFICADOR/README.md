@@ -1,14 +1,14 @@
-# 🧊 CUBO CLASIFICADOR
+# CUBO CLASIFICADOR
 
 Juego interactivo 3D en primera persona donde debes clasificar 4 piezas geométricas dejándolas caer en el hueco correcto de un cubo clasificador.
 
-Construido con **Three.js** (render 3D) y **cannon-es** (físicas), todo desde un navegador sin build tools.
+Construido con **Three.js r160** (render 3D) y **cannon-es 0.20** (físicas), todo desde un navegador sin build tools — ES modules nativos + import map.
 
 ---
 
-## 🎮 Cómo jugar
+## Como jugar
 
-| Acción | Control |
+| Accion | Control |
 |--------|---------|
 | Mirar alrededor | Click en canvas (bloquea el mouse) + mover mouse |
 | Caminar | **W A S D** |
@@ -16,129 +16,220 @@ Construido con **Three.js** (render 3D) y **cannon-es** (físicas), todo desde u
 | Mover pieza agarrada | **Flechas** del teclado |
 | Soltar el mouse | **ESC** |
 
-El objetivo es llevar cada pieza al hueco que coincide con su forma. Cuando la pieza está sobre su hueco correcto y la sueltas, se posiciona dentro del cubo y la gravedad termina el trabajo.
+El objetivo es llevar cada pieza al hueco que coincide con su forma. Cuando la pieza esta sobre su hueco correcto y la sueltas, el sistema de fisicas la deja caer naturalmente a traves del hueco — no hay snap posicional.
 
 ---
 
-## 🧩 Las 4 piezas
+## Las 4 piezas
 
-| Pieza | Geometría 3D | Forma del hueco | Color |
+| Pieza | Geometria 3D | Forma del hueco | Color |
 |-------|-------------|-------------------|-------|
-| **Esfera** | `SphereGeometry` (r=0.55) | Círculo | 🔴 Rojo |
-| **Cubo** | `BoxGeometry` (0.9³) | Cuadrado | 🔵 Azul |
-| **Triángulo** | `ExtrudeGeometry` (prisma triangular, r=0.65, depth=0.9) | Triángulo equilátero | 🟢 Verde |
-| **Estrella** | `ExtrudeGeometry` (4 puntas) | Estrella 4 puntas | 🔷 Cian |
+| **Esfera** | `SphereGeometry` (r=0.55) | Circulo | Rojo |
+| **Cubo** | `BoxGeometry` (0.9) | Cuadrado | Azul |
+| **Triangulo** | `ExtrudeGeometry` (prisma triangular, r=0.65, depth=0.9) | Triangulo equilatero | Verde |
+| **Estrella** | `ExtrudeGeometry` (4 puntas, r=0.5) | Estrella 4 puntas | Cian |
+
+Cada pieza se genera con su propia geometria y color, definidos en `data/holeConfigs.js` (fuente unica de verdad).
 
 ---
 
-## 🖥️ Panel de control
+## Panel de control
 
 En el panel lateral derecho puedes modificar la pieza seleccionada:
 
-- **Material**: Lambert (mate), Phong (especular), Standard (PBR realista)
-- **Textura procedural**: Rayas, Lunares, Degradado, Madera
+- **Material**: Lambert (mate, sin brillo), Phong (especular con shininess=90), Standard (PBR realista con roughness=0.35, metalness=0.45)
+- **Textura procedural**: Rayas, Lunares, Degradado, Madera (generadas via Canvas 2D con RepeatWrapping)
 - **Wireframe**: ON / OFF
-- **Luces**: alternar Direccional, Techo y Ambiental individualmente
+- **Luces**: alternar Direccional (sombra), Techo (point light) y Ambiental individualmente
 
-El **HUD** en la esquina superior izquierda muestra el estado actual.
+El **HUD** en la esquina superior izquierda muestra el estado actual del objeto seleccionado.
 
 ---
 
-## 🏗️ Arquitectura del proyecto
+## Arquitectura del proyecto
 
 ```
 CUBO_CLASIFICADOR/
-├── index.html              # Punto de entrada, HUD y panel
-├── style.css                # Estilos del HUD y panel
+├── index.html                 # Entry point: import map, HUD, panel de control
+├── style.css                  # Tema oscuro cyber-punk con acentos cian
+├── textures/                  # Sprites/imagenes para texturas (si aplica)
 └── src/
-    ├── index.js            # Orquestador: monta todos los módulos
-    ├── core/
-    │   ├── SceneManager.js      # Escena Three.js (fondo oscuro)
-    │   ├── CameraManager.js    # Cámara perspectiva 70° FOV
-    │   └── RendererManager.js  # Renderer WebGL con sombras PCFSoft
-    ├── objects/
-    │   ├── Room.js            # Cuarto 14×8 (piso, techo, 4 paredes)
-    │   ├── Classifier.js      # Cubo clasificador con 4 huecos
-    │   └── Pieces.js          # Las 4 piezas geométricas
+    ├── index.js              # Orquestador: conecta todos los modulos
+    │
+    ├── core/                  # Nucleo Three.js
+    │   ├── SceneManager.js       # Escena con fondo 0x141416
+    │   ├── CameraManager.js     # PerspectiveCamera 70 FOV, posicion (5, 1.6, 5)
+    │   └── RendererManager.js   # WebGLRenderer + antialiasing + PCFSoftShadowMap
+    │
+    ├── objects/               # Geometria del mundo
+    │   ├── Room.js               # Cuarto 14x8: piso, techo, 4 paredes con materiales PBR
+    │   ├── Classifier.js         # Cubo clasificador hueco (ExtrudeGeometry con 4 holes)
+    │   └── Pieces.js             # Las 4 piezas con fabrica de geometrias por pieceType
+    │
     ├── lights/
-    │   └── Lights.js          # 3 luces: ambiental, techo, direccional con sombras
+    │   └── Lights.js             # 3 luces: ambiental (0.4), techo PointLight (1.2), direccional con shadow map 1024
+    │
     ├── textures/
-    │   └── TextureFactory.js  # 4 texturas procedurales (canvas 2D)
+    │   └── TextureFactory.js     # 4 texturas procedurales via Canvas 2D: rayas, lunares, degradado, madera
+    │
     ├── materials/
-    │   └── MaterialFactory.js    # Fábrica: Lambert / Phong / Standard + textura + wireframe
-    ├── controls/
-    │   ├── InputManager.js   # Input centralizado (teclado + pointer lock)
-    │   ├── CameraFPS.js      # Cámara FPS con WASD, mouse look, colisiones AABB
-    │   └── DragManager.js    # Arrastre de piezas con raycasting y físicas
-    ├── physics/
-    │   ├── PhysicsWorld.js   # Mundo cannon-es (gravedad -35, contact materials)
-    │   ├── BodyFactory.js    # Registro de bodies: dinámicos (piezas) y estáticos (paredes, panel)
-    │   └── PhysicsSystem.js  # Step + sync mesh↔body + modo kinematic + velocity trail
+    │   └── MaterialFactory.js    # Fabrica: lambert / phong / standard + textura + wireframe toggle
+    │
+    ├── controls/              # Input y camara
+    │   ├── InputManager.js       # Input centralizado con pointer lock + fallback teclado no-QWERTY
+    │   ├── CameraFPS.js          # Camara FPS: pitch/yaw, WASD, colision AABB contra obstaculos
+    │   └── DragManager.js        # Arrastre con raycasting, modo kinematic, colision AABB por eje, limitStep
+    │
+    ├── physics/               # Simulacion fisica (cannon-es)
+    │   ├── PhysicsWorld.js       # Mundo con gravedad -35, solver 30 iter, contact materials, sleep
+    │   ├── BodyFactory.js        # Fabrica de bodies: piezas (dinamicos), paredes/panel/piso (estaticos)
+    │   └── PhysicsSystem.js      # Step por frame, sync mesh-body, modo kinematic, drag trail para release velocity
+    │
     ├── game/
-    │   └── ClassifierRules.js # Lógica: ¿la pieza está sobre su hueco?
+    │   └── ClassifierRules.js    # Logica: ?la pieza esta sobre su hueco? via HoleDetector
+    │
     ├── ui/
-    │   └── Interface.js      # HUD + panel de control (selección, materiales, texturas, luces)
+    │   └── Interface.js          # HUD + panel de control: seleccion, materiales, texturas, wireframe, luces
+    │
     ├── animations/
-    │   └── AnimationLoop.js  # Bucle principal (físicas → clamp → input → anim → render)
-    ├── utils/
-    │   ├── ResizeHandler.js  # Responsive (resize de ventana)
-    │   ├── geometry.js       # Vértices de estrella (compartido entre huecos y piezas)
-    │   ├── HoleDetector.js   # Detección punto-en-hueco (círculo, triángulo, polígono, etc.)
-    │   └── holeShapes.js     # Generación de Paths para los 6 tipos de hueco
-    └── data/
-        ├── holeConfigs.js          # FUENTE ÚNICA: configuración de los 4 huecos y piezas
-        └── classifierDimensions.js # Constantes geométricas del clasificador (OUTER, WALL_HEIGHT, ...)
+    │   └── AnimationLoop.js      # Bucle principal: delta capped 1/30, fisicas, clamp, input, render
+    │
+    ├── utils/                 # Funciones transversales
+    │   ├── ResizeHandler.js      # Responsive: resize camara + renderer
+    │   ├── geometry.js           # pointInTriangle, pointInPolygon, computeStarPoints (compartido huecos y piezas)
+    │   ├── HoleDetector.js       # Deteccion punto-en-hueco con tolerancia 0.1 (circulo, cuadrado, triangulo, estrella)
+    │   └── holeShapes.js         # Generacion de Paths Three.js para los 4 tipos de hueco
+    │
+    └── data/                  # Configuracion centralizada
+        ├── holeConfigs.js          # FUENTE UNICA: posicion, tamanio, color de cada hueco y pieza
+        └── classifierDimensions.js # Constantes: OUTER=4, WALL_HEIGHT=2.5, PANEL_DEPTH=0.5, etc.
 ```
 
-### Principios de diseño
+---
 
-- **Single Source of Truth**: `data/holeConfigs.js` define tamaños y posiciones de huecos y piezas. `Classifier.js` y `Pieces.js` importan del mismo archivo. `data/classifierDimensions.js` centraliza las constantes geométricas del clasificador.
-- **Single Responsibility**: cada archivo hace UNA cosa. Ej: `ClassifierRules.js` solo responde "¿está sobre su hueco?", no sabe de físicas ni de input.
-- **Separación render-física**: Three.js renderiza, cannon-es simula. `PhysicsSystem.js` sincroniza ambos mundos.
-- **Descubrimiento por tipo**: `BodyFactory.js` y `AnimationLoop.js` determinan el comportamiento de cada pieza por `pieceType` (no por label), manteniendo el polimorfismo sin acoplamiento.
+## Detalles tecnicos
+
+### Renderizado
+
+- **Three.js r160** via CDN (import map)
+- **WebGLRenderer** con antialiasing, pixel ratio limitado a 2, PCFSoftShadowMap
+- **Camara** perspectiva 70 FOV, near=0.1, far=100, altura de ojos 1.6
+- **Luz direccional** con shadow map 1024x1024, camara de sombras con frustum ±8, near=0.5, far=25
+- **Fondo** gris oscuro `0x141416`
+
+### Fisicas (cannon-es 0.20)
+
+- **Gravedad**: `(0, -35, 0)` — mas fuerte que la real para mejor game feel
+- **Solver**: 30 iteraciones para contactos estables
+- **Fixed timestep**: `world.fixedStep(1/240, dt)` con dt maximo 1/30 para evitar espiral de muerte
+- **Materiales de colision**: piece, wall, panel, ground con friction y restitution configurados por par
+- **Sleep**: cuerpos quietos entran en sleep (speedLimit=0.12, timeLimit=1.0) para ahorrar CPU
+
+### Panel perforado (fisica)
+
+El panel del clasificador NO usa `CANNON.Trimesh`. `Trimesh` en cannon-es solo soporta colisiones `Sphere vs Trimesh` y `Plane vs Trimesh` — las demas formas (Box, Cylinder) se traspasan. En su lugar, `BodyFactory.registerStatic(mesh, 'panel')` construye una **grilla de `CANNON.Box`** que cubre las partes solidas del panel:
+
+1. Divide el panel en una grilla de celdas de 0.25 unidades
+2. Para cada celda, verifica si su centro cae dentro de un hueco via `isInsideAnyHole()` (con margen `halfCell` para compensar intrusion de celdas vecinas)
+3. Si esta dentro de un hueco, la celda NO se crea (dejando el hueco vacio)
+4. Si esta fuera, se agrega un `CANNON.Box` como shape del body compuesto
+
+Esto garantiza compatibilidad con TODAS las formas de piezas (Sphere, Box, Cylinder con 3 segmentos para triangulo, Cylinder con 8 segmentos para estrella).
+
+### Huecos visuales (ExtrudeGeometry)
+
+El panel superior usa `THREE.Shape` con el contorno exterior cuadrado y `shape.holes` poblado con paths generados por `holeShapes.js`. Cada path debe tener winding opuesto al contorno exterior para que Three.js lo reconozca como hueco.
+
+**Gotcha conocido**: El hueco triangular requiere que los vertices se generen en sentido CW (horario: top → bottom-right → bottom-left). Con el orden original (top → bottom-left → bottom-right), el algoritmo earcut de Three.js r160 no calcula correctamente el puente del hueco cuando el poligono se queda con exactamente 3 vertices despues de filtrar puntos colineales.
+
+### Formas fisicas de las piezas
+
+Cada pieza mapea su `pieceType` a una forma cannon-es:
+- **sphere**: `CANNON.Sphere`
+- **box**: `CANNON.Box`
+- **triangle**: `CANNON.Cylinder(r, r, h, 3)` — prisma triangular
+- **star**: `CANNON.Cylinder(r, r, h, 8)` — aproximacion del concavo
+
+### Sistema de arrastre (DragManager)
+
+- **Raycasting**: selecciona piezas via `Raycaster` desde la camara
+- **Modo kinematic**: al agarrar, el body pasa a `KINEMATIC` y se mueve con `setKinematicPosition()`. Al soltar, vuelve a dinamico con velocidad derivada de un trail de las ultimas 8 posiciones
+- **Colision AABB contra clasificador**: verifica traslape del AABB de la pieza contra `obstacleBoxes` precomputados de las paredes
+- **Deslizamiento por eje**: `clampMovement()` prueba X, Z, Y por separado para evitar que la pieza se trabe
+- **limitStep**: limita el desplazamiento por frame al semi-tamanio del AABB para evitar tunneling
+- **Velocidad de soltado**: suave, calculada desde el drag trail, con maximo `MAX_RELEASE_SPEED=5`
+- **Flechas del teclado**: mueven la pieza seleccionada via `moveSelectedBy(dx, dz)`
+
+### Camara FPS (CameraFPS)
+
+- **Mouse look**: acumula yaw/pitch con pitch clampado a ±(PI/2 - 0.05), orden de rotacion YXZ
+- **WASD**: vector forward con pitch, vector right horizontal puro, normalizado, escalado a speed=0.08
+- **Colision AABB**: `isBlocked()` contra obstaculos (mesh del clasificador) con `COLLIDE_MARGIN=0.35`
+- **Pointer lock**: se activa SOLO si no se esta arrastrando una pieza (via `draggingRef`)
+- **Limites del cuarto**: clamp a `roomBounds` con margen 0.5
+
+### InputManager
+
+- `keys` diccionario de estado de teclas
+- **Fallback teclados no-QWERTY**: mapea `e.code` (KeyW, KeyA, KeyS, KeyD) a `e.key` para compatibilidad internacional
+- Previene default en WASD y flechas para evitar scroll
+
+### Texturas procedurales
+
+Generadas en canvas 2D de 256x256 con `RepeatWrapping` y `repeat.set(2, 2)`:
+
+| Textura | Descripcion |
+|---------|-------------|
+| **Rayas** | Fondo oscuro con rayas naranjas horizontales |
+| **Lunares** | Fondo verde oscuro con puntos cian en grilla |
+| **Degradado** | Degradado lineal rosa → violeta → cian |
+| **Madera** | Fondo marron con vetas simuladas con `Math.sin()` + ruido |
+
+### Bucle principal (AnimationLoop)
+
+Cada frame:
+1. Calcula delta time, capado a 1/30
+2. `fpsControl.update()` — actualiza camara (input WASD + mouse)
+3. `physicsSystem.update(dt, draggedMesh)` — un paso de fisica + sincroniza bodies → meshes
+4. `clampToRoomBounds(draggedMesh)` — safety net: si una pieza escapo del cuarto, la clampa y anula velocidad
+5. Movimiento con flechas si hay pieza seleccionada
+6. `renderer.render(scene, camera)`
+
+### Logica del juego (ClassifierRules)
+
+- `isOverOwnHole(mesh)` verifica si la pieza esta sobre su hueco correspondiente
+- Filtro rapido: si `mesh.position.y < WALL_HEIGHT - 1.0`, retorna false (muy abajo)
+- Convierte posicion mundial a coordenadas del Shape (`sx = x`, `sy = -z`)
+- Usa `HoleDetector.isInsideHole()` con tolerancia 0.1 para compensar imprecision de camara FPS
+- En `onDragEnd` de DragManager, si la pieza esta sobre su hueco, muestra mensaje en consola
 
 ---
 
-## ⚙️ Detalles técnicos
+## Como ejecutar
 
-| Aspecto | Implementación |
-|---------|---------------|
-| **Motor 3D** | Three.js r160 via CDN (import map) |
-| **Física** | cannon-es 0.20 via CDN |
-| **Sombras** | Directional light con shadow map 1024×1024, PCFSoft |
-| **Colisión de cámara** | AABB contra paredes del cuarto y del clasificador |
-| **Colisión de drag** | AABB por eje (X → Z → Y) para deslizamiento natural |
-| **Panel perforado** | `CANNON.Trimesh` construido desde la geometría Three.js con huecos reales (`ExtrudeGeometry` + `shape.holes`). Las piezas caen por **gravedad física real** a través de los huecos |
-| **Anti-tunneling** | `limitStep()` limita el desplazamiento al tamaño del AABB de la pieza |
-| **Drop en hueco** | `onPointerUp` solo hace `setKinematic(false)`. La pieza cae **naturalmente** a través del Trimesh del panel — **no hay posicionamiento en Y=0.3** |
-| **Fixed timestep** | `world.fixedStep(1/240, dt)` con dt máximo 1/30 para evitar espiral de muerte |
-| **Sleep** | Cuerpos cannon-es entran en sleep para ahorrar CPU |
-
----
-
-## 🚀 Cómo ejecutar
-
-No requiere build ni servidor — es HTML + módulos ES nativos.
+No requiere build ni servidor — es HTML + modulos ES nativos.
 
 ```bash
-# Opción 1: abrir directamente (puede fallar por CORS)
-firefox index.html
-
-# Opción 2: servidor local (recomendado)
+# Opcion 1: servidor local (recomendado)
 python3 -m http.server 8080
 # luego abre http://localhost:8080
 
-# Opción 3: con Node
+# Opcion 2: con Node
 npx serve .
+
+# Opcion 3: abrir directamente (puede fallar por CORS)
+firefox index.html
 ```
 
 ---
 
-## 🧠 Mejoras posibles
+## Mejoras posibles
 
-- Sistema de puntuación / timer
+- Sistema de puntuacion / timer
 - Feedback visual y sonoro cuando una pieza encaja
-- Más piezas y formas de hueco
+- Mas piezas y formas de hueco (rectangulo, hexagono, cono, cilindro)
 - Modo multijugador o niveles progresivos
 - Shaders personalizados en lugar de texturas procedurales canvas
-- Instancing para múltiples cubos clasificadores
+- Instancing para multiples cubos clasificadores
+- Particulas al encajar una pieza
+- Animacion de camara al completar el juego
