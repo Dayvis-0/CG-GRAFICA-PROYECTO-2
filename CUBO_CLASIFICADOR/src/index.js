@@ -74,7 +74,7 @@ const physicsSystem = createPhysicsSystem(pieces, bodyFactory, physicsWorld);
 const rules = createClassifierRules(panel);
 
 // ─── Controles ─────────────────────────────────────────────────────
-const obstacles = [...walls, panel, ...pieces.children.filter(c => c.isMesh)];
+const obstacles = [...walls, panel];
 const fpsControl = setupCameraFPS(cam, renderer, room.userData.bounds, obstacles, draggingRef, inputManager);
 
 // Obstáculos del arrastre: SOLO paredes del clasificador (el panel Trimesh

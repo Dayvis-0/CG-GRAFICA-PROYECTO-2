@@ -278,7 +278,7 @@ export function setupDragManager(activeCameraRef, renderer, {
         selected.position.copy(newPos);
     }
 
-    function onPointerUp() {
+    function onPointerUp(e) {
         const releasedMesh = selected;
         if (selected) {
             // El panel ahora es un Trimesh con huecos reales: la pieza cae
@@ -290,6 +290,7 @@ export function setupDragManager(activeCameraRef, renderer, {
         dragging = false;
         dragStartY = null;
         if (onDragEnd) onDragEnd(releasedMesh);
+        renderer.domElement.releasePointerCapture(e.pointerId);
         renderer.domElement.style.cursor = 'default';
     }
 

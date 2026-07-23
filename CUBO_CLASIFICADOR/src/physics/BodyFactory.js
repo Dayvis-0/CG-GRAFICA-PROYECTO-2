@@ -239,8 +239,8 @@ export function createBodyFactory(world, materials) {
 
             // Iteramos en shape space (XY del Shape original)
             // shape (sx, sy) → world offset (sx, 0, -sy) relativo al body center
-            for (let sx = -halfExtent + halfCell; sx < halfExtent; sx += cellSize) {
-                for (let sy = -halfExtent + halfCell; sy < halfExtent; sy += cellSize) {
+            for (let sx = -halfExtent + halfCell; sx <= halfExtent - halfCell; sx += cellSize) {
+                for (let sy = -halfExtent + halfCell; sy <= halfExtent - halfCell; sy += cellSize) {
                     if (isInsideAnyHole(sx, sy, holeConfigs, halfCell)) continue;
                     const halfW = cellSize / 2;
                     const halfH = cellSize / 2;
