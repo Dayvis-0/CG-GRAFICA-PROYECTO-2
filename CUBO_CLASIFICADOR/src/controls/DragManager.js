@@ -311,6 +311,15 @@ export function setupDragManager(activeCameraRef, renderer, {
             selected.position.copy(clamped);
         },
 
+        updateArrowInput(inputManager) {
+            if (!selected) return;
+            const step = 0.08;
+            if (inputManager.isDown('ArrowUp'))    this.moveSelectedBy( 0, -step);
+            if (inputManager.isDown('ArrowDown'))  this.moveSelectedBy( 0,  step);
+            if (inputManager.isDown('ArrowLeft'))  this.moveSelectedBy(-step,  0);
+            if (inputManager.isDown('ArrowRight')) this.moveSelectedBy( step,  0);
+        },
+
         dispose() {
             el.removeEventListener('pointerdown', onPointerDown);
             el.removeEventListener('pointermove', onPointerMove);

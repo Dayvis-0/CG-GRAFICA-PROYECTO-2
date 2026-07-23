@@ -17,6 +17,7 @@ import { createPhysicsWorld }   from './physics/PhysicsWorld.js';
 import { createBodyFactory }    from './physics/BodyFactory.js';
 import { createPhysicsSystem }  from './physics/PhysicsSystem.js';
 import { createClassifierRules } from './game/ClassifierRules.js';
+import { createTimer }           from './game/Timer.js';
 import { HOLE_CONFIGS } from './data/holeConfigs.js';
 import { WALL_HEIGHT, PANEL_DEPTH, OUTER } from './data/classifierDimensions.js';
 
@@ -58,67 +59,7 @@ function tryClassify(mesh) {
 }
 
 // ─── Cronómetro ────────────────────────────────────────────────────
-const timerEl = document.getElementById('timer');
-const timerDisplay = document.getElementById('timer-display');
-let timerMinutes = 1;
-let timerSeconds = 0;
-let timerRunning = false;
-let timerInterval = null;
-let timerStarted = false; // para que arranque UNA sola vez
-
-function timerUpdateDisplay() {
-    const mm = String(timerMinutes).padStart(2, '0');
-    const ss = String(timerSeconds).padStart(2, '0');
-    timerDisplay.textContent = `${mm}:${ss}`;
-}
-
-function timerStart() {
-    if (timerRunning || timerStarted) return;
-    timerStarted = true;
-    timerRunning = true;
-    timerEl.classList.add('running');
-    timerInterval = setInterval(() => {
-        if (timerSeconds === 0) {
-            if (timerMinutes === 0) {
-                // Se acabó el tiempo
-                clearInterval(timerInterval);
-                timerRunning = false;
-                timerDisplay.textContent = '00:00';
-                timerDisplay.style.color = '#ff5566';
-                console.log('⏰ ¡Tiempo agotado!');
-                return;
-            }
-            timerMinutes--;
-            timerSeconds = 59;
-        } else {
-            timerSeconds--;
-        }
-        timerUpdateDisplay();
-    }, 1000);
-}
-
-function timerReset() {
-    if (timerInterval) clearInterval(timerInterval);
-    timerRunning = false;
-    timerStarted = false;
-    timerMinutes = 1;
-    timerSeconds = 0;
-    timerEl.classList.remove('running');
-    timerDisplay.style.color = '';
-    timerUpdateDisplay();
-}
-
-// Botones +/-
-document.getElementById('timer-minus').onclick = () => {
-    if (timerRunning || timerStarted) return;
-    if (timerMinutes > 1) timerMinutes--;
-    timerUpdateDisplay();
-};
-document.getElementById('timer-plus').onclick = () => {
-    if (timerRunning || timerStarted) return;
-    if (timerMinutes < 5) timerMinutes++;
-    timerUpdateDisplay();
-};
+const timer = createTimer();
 
 // ─── Reset de piezas ──────────────────────────────────────────────
 function resetPieces() {
@@ -145,7 +86,7 @@ function resetPieces() {
     // Resetear clasificación + cronómetro
     classifiedLabels.clear();
     if (interfaceCtrl) interfaceCtrl.resetScores();
-    timerReset();
+    timer.reset();
     console.log('🔄 Piezas reiniciadas');
 }
 
@@ -197,7 +138,7 @@ const dragManager = setupDragManager(activeCameraRef, renderer, {
     },
     onDragStart: () => {
         draggingRef.current = true;
-        timerStart();
+        timer.start();
     },
     onDragEnd:   (mesh) => {
         // Delay de 120ms para evitar que el click post-suelte active el pointer lock

@@ -115,14 +115,8 @@ export function setupAnimationLoop({
         // 4. Callback post-física (clasificación, etc.)
         if (onPostPhysics) onPostPhysics(draggedMesh);
 
-        // 5. Movimiento con flechas (polling desde InputManager)
-        if (draggedMesh) {
-            const step = 0.08;
-            if (inputManager.isDown('ArrowUp'))    dragManager.moveSelectedBy( 0, -step);
-            if (inputManager.isDown('ArrowDown'))  dragManager.moveSelectedBy( 0,  step);
-            if (inputManager.isDown('ArrowLeft'))  dragManager.moveSelectedBy(-step,  0);
-            if (inputManager.isDown('ArrowRight')) dragManager.moveSelectedBy( step,  0);
-        }
+        // 5. Movimiento con flechas (delegado a DragManager)
+        dragManager.updateArrowInput(inputManager);
 
         // 6. Render
         renderer.render(scene, activeCameraRef.current);
