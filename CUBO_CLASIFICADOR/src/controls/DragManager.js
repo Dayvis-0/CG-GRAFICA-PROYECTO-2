@@ -224,6 +224,9 @@ export function setupDragManager(activeCameraRef, renderer, {
         dragPlane.setFromNormalAndCoplanarPoint(camDir, selected.position);
         raycaster.ray.intersectPlane(dragPlane, target);
         offset.copy(target).sub(selected.position);
+        // Anular el offset vertical para evitar que la pieza se eleve/baje
+        // bruscamente al hacer click (el plano inclinado genera target.y ≠ pos.y).
+        offset.y = 0;
 
         renderer.domElement.style.cursor = 'grabbing';
     }
