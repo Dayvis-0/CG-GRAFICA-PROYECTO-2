@@ -312,6 +312,26 @@ canvas { display: block; }
     pointer-events: none;
 }
 
+/* ── Responsividad básica (HTML-003) ── */
+@media (max-width: 768px) {
+    #panel {
+        top: auto;
+        right: 12px;
+        bottom: 60px;
+        width: 180px;
+        font-size: 10px;
+        padding: 10px 12px;
+    }
+    #panel h3 { font-size: 9px; }
+    .matbtn, .texbtn { font-size: 9px; padding: 4px 6px; }
+    #hud { font-size: 11px; min-width: 180px; }
+    #hud-title { font-size: 14px; }
+    #hint { display: none; }
+    #timer { padding: 6px 14px; gap: 8px; }
+    #timer-display { font-size: 24px; min-width: 70px; }
+    .timer-btn { width: 30px; height: 30px; font-size: 18px; }
+}
+
 /* Hint */
 #hint {
     position: absolute;

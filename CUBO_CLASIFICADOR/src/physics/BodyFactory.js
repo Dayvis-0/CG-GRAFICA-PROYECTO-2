@@ -174,13 +174,13 @@ export function createBodyFactory(world, materials) {
         });
 
         // Amortiguación suave → eventualmente las piezas se aquietan
-        body.linearDamping = 0.05;
-        body.angularDamping = 0.1;
+        body.linearDamping = PHYSICS_CONSTANTS.LINEAR_DAMPING;
+        body.angularDamping = PHYSICS_CONSTANTS.ANGULAR_DAMPING;
 
         // Sleep: cuerpos quietos no consumen CPU
         body.allowSleep = true;
-        body.sleepSpeedLimit = 0.12;
-        body.sleepTimeLimit = 1.0;
+        body.sleepSpeedLimit = PHYSICS_CONSTANTS.SLEEP_SPEED_LIMIT;
+        body.sleepTimeLimit = PHYSICS_CONSTANTS.SLEEP_TIME_LIMIT;
 
         world.addBody(body);
 
@@ -271,7 +271,7 @@ export function createBodyFactory(world, materials) {
             const size = new THREE.Vector3();
             bbox.getSize(size);
             // Evitar dimensiones cero (seguridad) + espesor mínimo anti-tunneling
-            const minDim = opts.minThick ?? 0.1;
+            const minDim = opts.minThick ?? PHYSICS_CONSTANTS.MIN_WALL_THICKNESS;
             const sx = Math.max(size.x, minDim);
             const sy = Math.max(size.y, minDim);
             const sz = Math.max(size.z, minDim);

@@ -49,30 +49,36 @@ export function setupInterface({
     }
 
     // ── Panel ──
+    // PERF-005: Cachear DOM queries del hot path para evitar re-queries en cada selección
+    const _objBtns = [...document.querySelectorAll('.objbtn')];
+    const _matBtns = [...document.querySelectorAll('.matbtn')];
+    const _texBtns = [...document.querySelectorAll('.texbtn')];
+    const _wfBtn = document.getElementById('wf-btn');
+
     function updatePanelSelection() {
         const st = getMeshState();
         // Botones de objeto
-        document.querySelectorAll('.objbtn').forEach(b => {
+        _objBtns.forEach(b => {
             b.classList.toggle('active', b.dataset.key === selectedKey);
         });
         if (!st) {
-            document.querySelectorAll('.matbtn').forEach(b => b.classList.remove('active'));
-            document.querySelectorAll('.texbtn').forEach(b => b.classList.remove('active'));
-            document.getElementById('wf-btn').classList.remove('active');
-            document.getElementById('wf-btn').textContent = 'Wireframe: OFF';
+            _matBtns.forEach(b => b.classList.remove('active'));
+            _texBtns.forEach(b => b.classList.remove('active'));
+            _wfBtn.classList.remove('active');
+            _wfBtn.textContent = 'Wireframe: OFF';
             return;
         }
         // Botones de material
-        document.querySelectorAll('.matbtn').forEach(b => {
+        _matBtns.forEach(b => {
             b.classList.toggle('active', b.dataset.mat === st.state.material);
         });
         // Botones de textura
-        document.querySelectorAll('.texbtn').forEach(b => {
+        _texBtns.forEach(b => {
             b.classList.toggle('active', b.dataset.tex === st.state.texture);
         });
         // Wireframe
-        document.getElementById('wf-btn').classList.toggle('active', st.state.wireframe);
-        document.getElementById('wf-btn').textContent = st.state.wireframe ? 'Wireframe: ON' : 'Wireframe: OFF';
+        _wfBtn.classList.toggle('active', st.state.wireframe);
+        _wfBtn.textContent = st.state.wireframe ? 'Wireframe: ON' : 'Wireframe: OFF';
     }
 
     // ── Aplicar estado actualizado al mesh ──

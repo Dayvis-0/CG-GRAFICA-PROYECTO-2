@@ -9,7 +9,7 @@
 <!-- Estilos -->
 <link rel="stylesheet" href="style.css">
 
-<!-- Importmap Three.js -->
+<!-- Importmap Three.js -- con fallback a CDN secundario (jsdelivr) -->
 <script type="importmap">
 {
     "imports": {
@@ -18,6 +18,24 @@
         "cannon-es": "https://unpkg.com/cannon-es@0.20.0/dist/cannon-es.js"
     }
 }
+</script>
+<!-- Fallback: si el CDN principal falla, reintenta con jsdelivr -->
+<script>
+(async function() {
+    try {
+        await import('three');
+    } catch {
+        console.warn('[Fallback] CDN principal (unpkg) falló, usando jsdelivr');
+        const im = document.querySelector('script[type="importmap"]');
+        const map = JSON.parse(im.textContent);
+        map.imports.three = 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
+        map.imports['three/addons/'] = 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/';
+        map.imports['cannon-es'] = 'https://cdn.jsdelivr.net/npm/cannon-es@0.20.0/dist/cannon-es.js';
+        im.textContent = JSON.stringify(map);
+        // Dispara un evento para que el entry point sepa que hubo fallback
+        document.dispatchEvent(new CustomEvent('cdn-fallback'));
+    }
+})();
 </script>
 </head>
 <body>
@@ -62,9 +80,9 @@
   <div id="obj-buttons"></div>
 
   <h3>Material</h3>
-  <button class="btn matbtn" data-mat="lambert">Lambert (mate, sin brillo)</button>
-  <button class="btn matbtn" data-mat="phong">Phong (brillo especular)</button>
-  <button class="btn matbtn" data-mat="standard">Standard (PBR realista)</button>
+  <button type="button" class="btn matbtn" data-mat="lambert">Lambert (mate, sin brillo)</button>
+  <button type="button" class="btn matbtn" data-mat="phong">Phong (brillo especular)</button>
+  <button type="button" class="btn matbtn" data-mat="standard">Standard (PBR realista)</button>
 
   <h3>Textura procedural</h3>
   <div>
