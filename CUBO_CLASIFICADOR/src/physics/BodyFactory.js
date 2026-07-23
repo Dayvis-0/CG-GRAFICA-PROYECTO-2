@@ -24,7 +24,14 @@ function isInsideAnyHole(sx, sy, holeConfigs, halfCell) {
                 break;
             }
             case 'triangle': {
-                const r = cfg.hole.r + m;
+                // El triángulo necesita MÁS margen que otras formas porque:
+                //   1) La grilla de celdas cuadradas se alinea mal con bordes a 30°
+                //   2) Expandir el radio circunscrito solo mueve los lados la mitad
+                //   3) El collision body (Cylinder(3)) puede llegar rotado
+                // Usamos el doble de margen para que el hueco físico nunca sea
+                // más chico que el visual.
+                const tm = halfCell * 2;
+                const r = cfg.hole.r + tm;
                 const s32 = 0.86602540378;
                 const ax = cfg.cx, ay = cfg.cy + r;
                 const bx = cfg.cx + r * s32, by = cfg.cy - r / 2;
@@ -163,14 +170,28 @@ export function createBodyFactory(world, materials) {
     function registerPiece(mesh, mass = 1) {
         const shape = buildPieceShape(mesh);
 
+        // El CANNON.Cylinder(3) genera el 1er vértice en +X, pero el triángulo
+        // visual (Pieces.js) tiene el "top" apuntando a -Z tras rotateX(-PI/2).
+        // Sin esta rotación, el collision body entra desalineado al hueco y
+        // sus vértices chocan contra las paredes de la grilla.
+        let quat;
+        if (mesh.userData.pieceType === 'triangle') {
+            const s = Math.SQRT1_2; // sin(45°) ≈ 0.707
+            // +90° alrededor de Y: el 1er vértice del Cylinder(3) va de +X a -Z,
+            // alineándose con el "top" del triángulo visual (que apunta a -Z)
+            quat = new CANNON.Quaternion(0, s, 0, s);
+        } else {
+            quat = new CANNON.Quaternion(
+                mesh.quaternion.x, mesh.quaternion.y, mesh.quaternion.z, mesh.quaternion.w,
+            );
+        }
+
         const body = new CANNON.Body({
             mass,
             shape,
             material: materials.piece,
             position: new CANNON.Vec3(mesh.position.x, mesh.position.y, mesh.position.z),
-            quaternion: new CANNON.Quaternion(
-                mesh.quaternion.x, mesh.quaternion.y, mesh.quaternion.z, mesh.quaternion.w,
-            ),
+            quaternion: quat,
         });
 
         // Amortiguación suave → eventualmente las piezas se aquietan
