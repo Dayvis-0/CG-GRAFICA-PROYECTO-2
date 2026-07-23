@@ -20,10 +20,11 @@ export function circleHole(cx, cy, r) {
 export function squareHole(cx, cy, side) {
     const half = side / 2;
     const path = new Path();
+    // Winding CW (horario): opuesto al shape exterior CCW → Three.js lo reconoce como hueco
     path.moveTo(cx - half, cy - half);
-    path.lineTo(cx - half, cy + half);
-    path.lineTo(cx + half, cy + half);
     path.lineTo(cx + half, cy - half);
+    path.lineTo(cx + half, cy + half);
+    path.lineTo(cx - half, cy + half);
     path.closePath();
     return path;
 }
@@ -35,7 +36,8 @@ export function triangleHole(cx, cy, r) {
     const path = new Path();
     const top = Math.PI / 2;
     for (let i = 0; i < 3; i++) {
-        const angle = top - (i / 3) * Math.PI * 2;
+        // Sumar el ángulo (CW) en vez de restar (CCW) → winding horario = hueco válido
+        const angle = top + (i / 3) * Math.PI * 2;
         const x = cx + r * Math.cos(angle);
         const y = cy + r * Math.sin(angle);
         if (i === 0) path.moveTo(x, y);

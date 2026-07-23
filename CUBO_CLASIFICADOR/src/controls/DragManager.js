@@ -252,9 +252,11 @@ export function setupDragManager(activeCameraRef, renderer, {
             // para evitar que la pieza salte si Cannon la tenía ligeramente más baja.
             if (isOverClassifier(newPos)) {
                 const theoreticalMin = classifierTop + halfH;
-                // Si la pieza ya estaba más baja que el teórico (por la física de Cannon),
-                // respetar su posición real hasta que el usuario la suba deliberadamente.
-                const effectiveMin = dragStartY !== null
+                // dragStartY se respeta SOLO si la pieza fue tomada desde el panel
+                // (diferencia ≤ halfH = tolerancia de penetración física de Cannon).
+                // Si venía del suelo, dragStartY sería muy bajo y permitiría atravesar el panel.
+                const wasOnPanel = dragStartY !== null && dragStartY >= theoreticalMin - halfH;
+                const effectiveMin = wasOnPanel
                     ? Math.min(theoreticalMin, dragStartY)
                     : theoreticalMin;
                 newPos.y = Math.max(effectiveMin, newPos.y);
