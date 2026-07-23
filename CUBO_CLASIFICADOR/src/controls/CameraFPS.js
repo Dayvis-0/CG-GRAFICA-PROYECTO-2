@@ -1,4 +1,6 @@
 import * as THREE from 'three';
+import { isPointInsideBox } from '../utils/CollisionHelper.js';
+import { clampToBounds } from '../utils/math.js';
 
 /**
  * Control de cámara en primera persona (FPS).
@@ -14,8 +16,7 @@ import * as THREE from 'three';
  * @param {object} inputManager      — { isDown(key), isPointerLocked() }
  */
 export function setupCameraFPS(camera, renderer, roomBounds, obstacles = [], draggingRef = { current: false }, inputManager) {
-    const { half, height, margin } = roomBounds;
-    const limit = half - margin;
+    const { height, margin } = roomBounds;
     const yMin = margin;
     const yMax = height - margin;
 
@@ -61,21 +62,13 @@ export function setupCameraFPS(camera, renderer, roomBounds, obstacles = [], dra
     const target = new THREE.Vector3();
     const COLLIDE_MARGIN = 0.35;
 
-    // PERF-003: Precalcular AABBs de obstáculos estáticos (paredes, panel) una sola vez
+    // PERF-003 / DUP-001: Precalcular AABBs de obstáculos estáticos
     const obstacleBoxes = obstacles.map(mesh => new THREE.Box3().setFromObject(mesh));
 
     function isBlocked(pos) {
         for (let i = 0; i < obstacles.length; i++) {
             if (!obstacles[i].visible) continue;
-            const box = obstacleBoxes[i];
-            if (
-                pos.x >= box.min.x - COLLIDE_MARGIN &&
-                pos.x <= box.max.x + COLLIDE_MARGIN &&
-                pos.y >= box.min.y - COLLIDE_MARGIN &&
-                pos.y <= box.max.y + COLLIDE_MARGIN &&
-                pos.z >= box.min.z - COLLIDE_MARGIN &&
-                pos.z <= box.max.z + COLLIDE_MARGIN
-            ) {
+            if (isPointInsideBox(pos, obstacleBoxes[i], COLLIDE_MARGIN)) {
                 return true;
             }
         }
@@ -106,9 +99,9 @@ export function setupCameraFPS(camera, renderer, roomBounds, obstacles = [], dra
 
             target.copy(camera.position).add(move);
 
-            target.x = Math.max(-limit, Math.min(limit, target.x));
+            // DUP-002: Usar utilidad clampToBounds compartida
+            clampToBounds(target, roomBounds);
             target.y = Math.max(yMin, Math.min(yMax, target.y));
-            target.z = Math.max(-limit, Math.min(limit, target.z));
 
             if (!isBlocked(target)) {
                 camera.position.copy(target);

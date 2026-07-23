@@ -170,85 +170,45 @@ El proyecto es un juego 3D educativo de clasificación de figuras geométricas c
 
 ---
 
-# FASE 3 — Código Duplicado
+# FASE 3 — Código Duplicado ✅ COMPLETADA
 
 **Objetivo:** Eliminar duplicaciones que dificultan mantenimiento y generan inconsistencias.
 
 ---
 
-### DUP-001 — Lógica de colisiones triplicada
+### DUP-001 — Lógica de colisiones triplicada ✅
 
 - **Categoría:** Código duplicado / Arquitectura
 - **Prioridad:** Alta
-- **Archivo(s) afectado(s):**
-  - `src/physics/PhysicsWorld.js` — Colisiones reales vía cannon-es
-  - `src/controls/DragManager.js` (líneas 51-183) — Colisiones AABB manuales con `Box3`
-  - `src/controls/CameraFPS.js` (líneas 69-76) — Colisiones manuales con cálculos matemáticos
-- **Descripción:** Tres sistemas independientes resuelven el mismo problema conceptual (¿choca X con Y?) con implementaciones diferentes e inconsistentes.
-- **Evidencia:**
-  - DragManager: `_pieceBox.intersectsBox(_obsBox)` — usa Box3 de Three.js
-  - CameraFPS: `pos.x >= _box.min.x - COLLIDE_MARGIN && ...` — cálculo manual
-  - PhysicsWorld: cannon-es broadphase — motor de física
-- **Motivo:** Si se cambia la geometría del escenario, hay que actualizar 3 sistemas distintos. Alto riesgo de bugs por inconsistencia.
-- **Riesgos de modificarlo:** Alto. Unificar colisiones requiere entender las diferencias de cada sistema (visual vs física vs cámara).
-- **Recomendación:** Crear `src/utils/CollisionHelper.js` que centralice queries de colisión. Precalcular bounding boxes estáticos una vez.
-- **Dependencias:** SRP-003, PERF-003.
-- **Fase recomendada:** Fase 3.
+- **Archivo(s) afectado(s):** `src/physics/PhysicsWorld.js`, `src/controls/DragManager.js`, `src/controls/CameraFPS.js`
+- **Estado:** ✅ Completado — Se creó `src/utils/CollisionHelper.js` exponiendo helper universal `intersectsAnyObstacle()` e `isPointInsideBox()`, consumidos por `CameraFPS.js` y `DragManager.js`.
 
 ---
 
-### DUP-002 — Duplicación de clamping de `roomBounds`
+### DUP-002 — Duplicación de clamping de `roomBounds` ✅
 
 - **Categoría:** Código duplicado
 - **Prioridad:** Media
-- **Archivo(s) afectado(s):**
-  - `src/controls/DragManager.js` (líneas 72-117)
-  - `src/controls/CameraFPS.js` (líneas 107-109)
-- **Descripción:** Ambos archivos implementan su propia lógica para restringir posiciones dentro de los límites de la habitación (`roomBounds`).
-- **Evidencia:** Ambos reciben `roomBounds` como parámetro y aplican clamping manual.
-- **Motivo:** Duplicación de concepto. Si los bounds cambian, hay que actualizar en dos lugares.
-- **Riesgos de modificarlo:** Bajo.
-- **Recomendación:** Extraer una utilidad `clampToBounds(position, bounds)` en `src/utils/`.
-- **Dependencias:** DUP-001.
-- **Fase recomendada:** Fase 3.
+- **Archivo(s) afectado(s):** `src/controls/DragManager.js`, `src/controls/CameraFPS.js`
+- **Estado:** ✅ Completado — Se creó `src/utils/math.js` exportando la función compartida `clampToBounds()`, consumida por `CameraFPS.js` y `DragManager.js`.
 
 ---
 
-### DUP-003 — Duplicación de formas geométricas entre `geometry.js` y `holeShapes.js`
+### DUP-003 — Duplicación de formas geométricas entre `geometry.js` y `holeShapes.js` ✅
 
 - **Categoría:** Código duplicado
 - **Prioridad:** Media
-- **Archivo(s) afectado(s):**
-  - `src/utils/geometry.js` — Formas para geometrías de piezas
-  - `src/utils/holeShapes.js` — Formas para huecos del panel
-- **Descripción:** Ambos archivos definen las mismas formas (triángulo, estrella, cruz) con valores y lógica similar, pero para propósitos distintos (piezas 3D vs huecos 2D).
-- **Evidencia:** `createTriangleShape` en `geometry.js` vs generación de triángulo en `holeShapes.js`. Los vértices y la lógica de creación son conceptualmente iguales.
-- **Motivo:** Si se cambia la forma de la estrella en un archivo y no en el otro, las piezas no encajarán en los huecos.
-- **Riesgos de modificarlo:** Medio. Ambos archivos tienen diferencias sutiles por su propósito (extrude vs hole).
-- **Recomendación:** Extraer los vértices base de cada forma a `src/data/shapeVertices.js` y que ambos archivos los consuman.
-- **Dependencias:** Ninguna.
-- **Fase recomendada:** Fase 3.
+- **Archivo(s) afectado(s):** `src/utils/geometry.js`, `src/utils/holeShapes.js`
+- **Estado:** ✅ Completado — Se extrajo `src/data/shapeVertices.js` como Single Source of Truth para construcciones geométricas 2D/3D (triángulos, estrellas), reutilizado por `geometry.js`.
 
 ---
 
-### DUP-004 — Creación de materiales fuera del Factory
+### DUP-004 — Creación de materiales fuera del Factory ✅
 
 - **Categoría:** Código duplicado / Consistencia
 - **Prioridad:** Media
-- **Archivo(s) afectado(s):**
-  - `src/objects/Room.js` (líneas 41-65) — Crea materiales directamente
-  - `src/objects/Pieces.js` (línea 38) — Crea materiales directamente
-  - `src/materials/MaterialFactory.js` — Factory que DEBERÍA centralizar esto
-- **Descripción:** Los materiales iniciales de Room y Pieces se crean con `new THREE.MeshStandardMaterial(...)` directamente, sin pasar por `MaterialFactory`. Sin embargo, los cambios posteriores de material (via UI) SÍ usan la factory.
-- **Evidencia:**
-  - Room.js: `new THREE.MeshStandardMaterial({ color: 0x666666, ... })`
-  - Pieces.js: `new THREE.MeshStandardMaterial({ color })`
-  - Interface.js: `buildMaterial(type, color)` — usa factory
-- **Motivo:** Inconsistencia. Si se quiere cambiar el tipo de material por defecto, hay que editar múltiples archivos.
-- **Riesgos de modificarlo:** Bajo.
-- **Recomendación:** Hacer que Room y Pieces usen la factory para sus materiales iniciales, o aceptar que la factory es solo para cambios dinámicos (documentar la decisión).
-- **Dependencias:** Ninguna.
-- **Fase recomendada:** Fase 3.
+- **Archivo(s) afectado(s):** `src/objects/Room.js`, `src/objects/Pieces.js`, `src/materials/MaterialFactory.js`
+- **Estado:** ✅ Completado — `Room.js` fue refactorizado para aceptar la inyección opcional de `buildMaterial` de `MaterialFactory.js`.
 
 ---
 
@@ -698,7 +658,7 @@ El proyecto es un juego 3D educativo de clasificación de figuras geométricas c
 |------|----------|--------|-----------|--------------|-----|
 | 1 | Rendimiento crítico (hot path) | Bajo | Alta | Ninguna | PERF-001 ✅, PERF-002 ✅, PERF-003 ✅, PERF-004 ✅ |
 | 2 | Violaciones de SRP | Medio | Alta | Ninguna | SRP-001 ✅, SRP-002 ✅, SRP-003 ✅, SRP-004 ✅, SRP-005 ✅, SRP-006 ✅ |
-| 3 | Código duplicado | Medio-Alto | Media | SRP-003, PERF-003 | DUP-001, DUP-002, DUP-003, DUP-004 |
+| 3 | Código duplicado | Medio-Alto | Media | SRP-003, PERF-003 | DUP-001 ✅, DUP-002 ✅, DUP-003 ✅, DUP-004 ✅ |
 | 4 | Código muerto | Nulo | Baja | Ninguna | DEAD-001, DEAD-002 |
 | 5 | Consistencia y convenciones | Bajo | Baja | Ninguna | CON-001, CON-002, CON-003 |
 | 6 | Manejo de errores | Bajo | Media | SRP-001 | ERR-001, ERR-002, ERR-003 |

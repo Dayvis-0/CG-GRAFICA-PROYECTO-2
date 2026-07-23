@@ -6,35 +6,44 @@ import * as THREE from 'three';
  * @param {object} options
  * @param {number} options.size       - Ancho/profundidad del cuarto (default 10)
  * @param {number} options.height     - Altura del cuarto (default 5)
+ * @param {function} [buildMaterial]  - Fábrica de materiales (opcional, DUP-004)
  * @returns {THREE.Group}
  */
-export function createRoom({ size = 14, height = 8 } = {}) {
+export function createRoom({ size = 14, height = 8 } = {}, buildMaterial = null) {
     const group = new THREE.Group();
     const half = size / 2;
 
     // ── Materiales PBR con sombras ──
     // Piso: gris cemento
-    const floorMat = new THREE.MeshStandardMaterial({
-        color: 0x7a8084,
-        roughness: 0.7,
-        metalness: 0.1,
-    });
+    const floorMat = buildMaterial
+        ? buildMaterial('standard', 0x7a8084)
+        : new THREE.MeshStandardMaterial({
+            color: 0x7a8084,
+            roughness: 0.7,
+            metalness: 0.1,
+        });
 
     // Paredes: azul grisáceo nórdico (DoubleSide para ver desde dentro)
-    const wallMat = new THREE.MeshStandardMaterial({
-        color: 0x4a5a64,
-        roughness: 0.9,
-        metalness: 0.0,
-        side: THREE.DoubleSide,
-    });
+    const wallMat = buildMaterial
+        ? buildMaterial('standard', 0x4a5a64)
+        : new THREE.MeshStandardMaterial({
+            color: 0x4a5a64,
+            roughness: 0.9,
+            metalness: 0.0,
+            side: THREE.DoubleSide,
+        });
+    if (buildMaterial) wallMat.side = THREE.DoubleSide;
 
     // Techo: blanco tiza
-    const ceilMat = new THREE.MeshStandardMaterial({
-        color: 0xf5f5f5,
-        roughness: 0.9,
-        metalness: 0.0,
-        side: THREE.DoubleSide,
-    });
+    const ceilMat = buildMaterial
+        ? buildMaterial('standard', 0xf5f5f5)
+        : new THREE.MeshStandardMaterial({
+            color: 0xf5f5f5,
+            roughness: 0.9,
+            metalness: 0.0,
+            side: THREE.DoubleSide,
+        });
+    if (buildMaterial) ceilMat.side = THREE.DoubleSide;
 
     // ── Piso ──
     const floor = new THREE.Mesh(

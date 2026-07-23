@@ -1,3 +1,5 @@
+import { SHAPE_VERTICES } from '../data/shapeVertices.js';
+
 /**
  * Funciones geométricas compartidas entre múltiples módulos.
  * Fuente única — los llamadores aplican su propia tolerancia expandiendo
@@ -30,20 +32,8 @@ export function pointInPolygon(px, py, verts) {
 }
 
 /**
- * Calcula los vértices 2D de una estrella de N puntas.
- * Centro en (0, 0). Usado tanto para huecos (holeShapes) como para piezas (Pieces).
- *
- * @param {number} outerR — radio exterior
- * @param {number} innerR — radio interior
- * @param {number} points — cantidad de puntas (default 4)
- * @returns {{ x: number, y: number }[]}
+ * Re-exporta computeStarPoints consumiendo la definición central SHAPE_VERTICES (DUP-003).
  */
 export function computeStarPoints(outerR, innerR, points = 4) {
-    const verts = [];
-    for (let i = 0; i < points * 2; i++) {
-        const r = i % 2 === 0 ? outerR : innerR;
-        const angle = (i / (points * 2)) * Math.PI * 2 - Math.PI / 2;
-        verts.push({ x: r * Math.cos(angle), y: r * Math.sin(angle) });
-    }
-    return verts;
+    return SHAPE_VERTICES.star.getVertices(outerR, innerR, points);
 }

@@ -1,4 +1,6 @@
 import * as THREE from 'three';
+import { intersectsAnyObstacle } from '../utils/CollisionHelper.js';
+import { clampToBounds } from '../utils/math.js';
 
 /**
  * Maneja el arrastre de piezas con el mouse (modo kinematic en cannon-es).
@@ -63,10 +65,8 @@ export function setupDragManager(activeCameraRef, renderer, {
             pos.z + _cachedHalfSize.z
         );
 
-        for (const obsBox of obstacleBoxes) {
-            if (_candBox.intersectsBox(obsBox)) return true;
-        }
-        return false;
+        // DUP-001: Usar CollisionHelper centralizado
+        return intersectsAnyObstacle(_candBox, obstacleBoxes);
     }
 
     // ─── Clamp a límites del cuarto ──────────────────────────────
@@ -91,16 +91,11 @@ export function setupDragManager(activeCameraRef, renderer, {
      * @returns {THREE.Vector3}
      */
     function clampToRoom(pos) {
-        // Usa half-size precacheado como proxy de offMin/offMax
-        // (equivalente porque offMin ≈ offMax ≈ halfSize para geometrías centradas)
-        const half = roomBounds.half;
-        const h    = roomBounds.height;
-
-        const m = ROOM_MARGIN;
-        pos.x = Math.max(-half + _cachedHalfSize.x + m, Math.min(half - _cachedHalfSize.x - m, pos.x));
-        pos.z = Math.max(-half + _cachedHalfSize.z + m, Math.min(half - _cachedHalfSize.z - m, pos.z));
+        // DUP-002: Usar utilidad clampToBounds compartida
+        clampToBounds(pos, roomBounds, { x: _cachedHalfSize.x, z: _cachedHalfSize.z });
         // Y: sin piso (minY ya lo maneja), solo techo
-        pos.y = Math.min(h - _cachedHalfSize.y - m, pos.y);
+        const h = roomBounds.height;
+        pos.y = Math.min(h - _cachedHalfSize.y - ROOM_MARGIN, pos.y);
 
         return pos;
     }
